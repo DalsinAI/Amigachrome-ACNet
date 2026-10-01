@@ -35,6 +35,11 @@ if [ -f "$HERE/tests/acnettest.c" ]; then
     echo "$OUT/acnettest ($(wc -c < "$OUT/acnettest") bytes)"
 fi
 
+if [ -f "$HERE/tests/bsdqual.c" ]; then
+    "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul -o "$OUT/bsdqual" "$HERE/tests/bsdqual.c"
+    echo "$OUT/bsdqual ($(wc -c < "$OUT/bsdqual") bytes)"
+fi
+
 if [ -f "$HERE/control/acnetcontrol.c" ]; then
     "$CC" -m68000 -O2 -Wall -Wno-pointer-sign -noixemul -I"$HERE/include" \
         -o "$OUT/ACNetControl" "$HERE/control/acnetcontrol.c" -lamiga

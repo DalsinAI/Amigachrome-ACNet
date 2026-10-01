@@ -1,0 +1,27 @@
+ACNet bsdsocket.library qualification - AmigaOS 3.2.3
+
+Guest: Instance-6 (ACNet OS3 Test)
+Target: AmigaOS 3.2.3 / m68k
+Result: PASS=46 FAIL=0, RC=0
+HostSocket regression: 20/20 PASS
+
+Covered:
+- OpenLibrary/version and descriptor table
+- hostname, forward and reverse DNS
+- protocol lookup
+- IPv4 conversion
+- TCP socket/bind/listen/connect/accept
+- getsockname/getpeername
+- send/recv
+- WaitSelect readiness and empty polling
+- FIONREAD and FIONBIO
+- SO_RCVTIMEO set/get
+- Dup2Socket
+- ReleaseCopyOfSocket/ObtainSocket
+- UDP bind/sendto/WaitSelect/FIONREAD/recvfrom
+- bad-descriptor errno
+- SetErrnoPtr propagation
+- 128 socket open/close cycles
+
+This is a compatibility/first-qualification gate, not a claim of complete Roadshow ABI coverage.
+Advanced Roadshow/BPF/mbuf/administrative vectors remain deliberate stubs.
