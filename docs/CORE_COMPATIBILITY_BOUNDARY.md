@@ -28,3 +28,16 @@ If real application evidence requires one of these interfaces, implement it unde
 ## Configuration
 
 IP addressing, DNS, activation, host/Wi-Fi policy, statistics and logs belong to the ACNet control plane (`acnet.device`/HostSocket/ACNetControl), not to another stack's administration API.
+
+## Physical vector safety envelope
+
+The logical core ABI ends at slot 56: 46 classic application vectors followed by
+10 reserved slots. The physical library table is deliberately longer. Slots 57-139
+are typed failure-only guards matching the extent of a widely deployed larger legacy
+ABI. This is a crash-safety measure, not API compatibility and not an implementation
+dependency.
+
+ACNet never assigns new meanings to slots 47-139. Any future ACNet library extension
+starts at slot 140 or later. Prefer `acnet.device`/HostSocket/ACNetControl for new
+configuration, status and lifecycle features so `bsdsocket.library` remains small and
+stable.

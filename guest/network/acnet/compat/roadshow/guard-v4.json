@@ -1,0 +1,414 @@
+{
+  "name": "Known legacy bsdsocket extension guard tail",
+  "first_slot": 57,
+  "last_slot": 139,
+  "slots": [
+    {
+      "slot": 57,
+      "name": "bpf_open",
+      "kind": "scalar"
+    },
+    {
+      "slot": 58,
+      "name": "bpf_close",
+      "kind": "scalar"
+    },
+    {
+      "slot": 59,
+      "name": "bpf_read",
+      "kind": "scalar"
+    },
+    {
+      "slot": 60,
+      "name": "bpf_write",
+      "kind": "scalar"
+    },
+    {
+      "slot": 61,
+      "name": "bpf_set_notify_mask",
+      "kind": "scalar"
+    },
+    {
+      "slot": 62,
+      "name": "bpf_set_interrupt_mask",
+      "kind": "scalar"
+    },
+    {
+      "slot": 63,
+      "name": "bpf_ioctl",
+      "kind": "scalar"
+    },
+    {
+      "slot": 64,
+      "name": "bpf_data_waiting",
+      "kind": "scalar"
+    },
+    {
+      "slot": 65,
+      "name": "AddRouteTagList",
+      "kind": "scalar"
+    },
+    {
+      "slot": 66,
+      "name": "DeleteRouteTagList",
+      "kind": "scalar"
+    },
+    {
+      "slot": 67,
+      "name": "ChangeRouteTagList",
+      "kind": "scalar"
+    },
+    {
+      "slot": 68,
+      "name": "FreeRouteInfo",
+      "kind": "void"
+    },
+    {
+      "slot": 69,
+      "name": "GetRouteInfo",
+      "kind": "ptr"
+    },
+    {
+      "slot": 70,
+      "name": "AddInterfaceTagList",
+      "kind": "scalar"
+    },
+    {
+      "slot": 71,
+      "name": "ConfigureInterfaceTagList",
+      "kind": "scalar"
+    },
+    {
+      "slot": 72,
+      "name": "ReleaseInterfaceList",
+      "kind": "void"
+    },
+    {
+      "slot": 73,
+      "name": "ObtainInterfaceList",
+      "kind": "ptr"
+    },
+    {
+      "slot": 74,
+      "name": "QueryInterfaceTagList",
+      "kind": "scalar"
+    },
+    {
+      "slot": 75,
+      "name": "CreateAddrAllocMessageA",
+      "kind": "scalar"
+    },
+    {
+      "slot": 76,
+      "name": "DeleteAddrAllocMessage",
+      "kind": "void"
+    },
+    {
+      "slot": 77,
+      "name": "BeginInterfaceConfig",
+      "kind": "void"
+    },
+    {
+      "slot": 78,
+      "name": "AbortInterfaceConfig",
+      "kind": "void"
+    },
+    {
+      "slot": 79,
+      "name": "AddNetMonitorHookTagList",
+      "kind": "scalar"
+    },
+    {
+      "slot": 80,
+      "name": "RemoveNetMonitorHook",
+      "kind": "void"
+    },
+    {
+      "slot": 81,
+      "name": "GetNetworkStatistics",
+      "kind": "scalar"
+    },
+    {
+      "slot": 82,
+      "name": "AddDomainNameServer",
+      "kind": "scalar"
+    },
+    {
+      "slot": 83,
+      "name": "RemoveDomainNameServer",
+      "kind": "scalar"
+    },
+    {
+      "slot": 84,
+      "name": "ReleaseDomainNameServerList",
+      "kind": "void"
+    },
+    {
+      "slot": 85,
+      "name": "ObtainDomainNameServerList",
+      "kind": "ptr"
+    },
+    {
+      "slot": 86,
+      "name": "setnetent",
+      "kind": "void"
+    },
+    {
+      "slot": 87,
+      "name": "endnetent",
+      "kind": "void"
+    },
+    {
+      "slot": 88,
+      "name": "getnetent",
+      "kind": "ptr"
+    },
+    {
+      "slot": 89,
+      "name": "setprotoent",
+      "kind": "void"
+    },
+    {
+      "slot": 90,
+      "name": "endprotoent",
+      "kind": "void"
+    },
+    {
+      "slot": 91,
+      "name": "getprotoent",
+      "kind": "ptr"
+    },
+    {
+      "slot": 92,
+      "name": "setservent",
+      "kind": "void"
+    },
+    {
+      "slot": 93,
+      "name": "endservent",
+      "kind": "void"
+    },
+    {
+      "slot": 94,
+      "name": "getservent",
+      "kind": "ptr"
+    },
+    {
+      "slot": 95,
+      "name": "inet_aton",
+      "kind": "scalar"
+    },
+    {
+      "slot": 96,
+      "name": "inet_ntop",
+      "kind": "ptr"
+    },
+    {
+      "slot": 97,
+      "name": "inet_pton",
+      "kind": "scalar"
+    },
+    {
+      "slot": 98,
+      "name": "In_LocalAddr",
+      "kind": "scalar"
+    },
+    {
+      "slot": 99,
+      "name": "In_CanForward",
+      "kind": "scalar"
+    },
+    {
+      "slot": 100,
+      "name": "mbuf_copym",
+      "kind": "ptr"
+    },
+    {
+      "slot": 101,
+      "name": "mbuf_copyback",
+      "kind": "scalar"
+    },
+    {
+      "slot": 102,
+      "name": "mbuf_copydata",
+      "kind": "scalar"
+    },
+    {
+      "slot": 103,
+      "name": "mbuf_free",
+      "kind": "ptr"
+    },
+    {
+      "slot": 104,
+      "name": "mbuf_freem",
+      "kind": "void"
+    },
+    {
+      "slot": 105,
+      "name": "mbuf_get",
+      "kind": "ptr"
+    },
+    {
+      "slot": 106,
+      "name": "mbuf_gethdr",
+      "kind": "ptr"
+    },
+    {
+      "slot": 107,
+      "name": "mbuf_prepend",
+      "kind": "ptr"
+    },
+    {
+      "slot": 108,
+      "name": "mbuf_cat",
+      "kind": "scalar"
+    },
+    {
+      "slot": 109,
+      "name": "mbuf_adj",
+      "kind": "scalar"
+    },
+    {
+      "slot": 110,
+      "name": "mbuf_pullup",
+      "kind": "ptr"
+    },
+    {
+      "slot": 111,
+      "name": "ProcessIsServer",
+      "kind": "bool"
+    },
+    {
+      "slot": 112,
+      "name": "ObtainServerSocket",
+      "kind": "scalar"
+    },
+    {
+      "slot": 113,
+      "name": "GetDefaultDomainName",
+      "kind": "bool"
+    },
+    {
+      "slot": 114,
+      "name": "SetDefaultDomainName",
+      "kind": "void"
+    },
+    {
+      "slot": 115,
+      "name": "ObtainRoadshowData",
+      "kind": "ptr"
+    },
+    {
+      "slot": 116,
+      "name": "ReleaseRoadshowData",
+      "kind": "void"
+    },
+    {
+      "slot": 117,
+      "name": "ChangeRoadshowData",
+      "kind": "bool"
+    },
+    {
+      "slot": 118,
+      "name": "RemoveInterface",
+      "kind": "scalar"
+    },
+    {
+      "slot": 119,
+      "name": "gethostbyname_r",
+      "kind": "ptr"
+    },
+    {
+      "slot": 120,
+      "name": "gethostbyaddr_r",
+      "kind": "ptr"
+    },
+    {
+      "slot": 121,
+      "kind": "reserved"
+    },
+    {
+      "slot": 122,
+      "kind": "reserved"
+    },
+    {
+      "slot": 123,
+      "name": "ipf_open",
+      "kind": "scalar"
+    },
+    {
+      "slot": 124,
+      "name": "ipf_close",
+      "kind": "scalar"
+    },
+    {
+      "slot": 125,
+      "name": "ipf_ioctl",
+      "kind": "scalar"
+    },
+    {
+      "slot": 126,
+      "name": "ipf_log_read",
+      "kind": "scalar"
+    },
+    {
+      "slot": 127,
+      "name": "ipf_log_data_waiting",
+      "kind": "scalar"
+    },
+    {
+      "slot": 128,
+      "name": "ipf_set_notify_mask",
+      "kind": "scalar"
+    },
+    {
+      "slot": 129,
+      "name": "ipf_set_interrupt_mask",
+      "kind": "scalar"
+    },
+    {
+      "slot": 130,
+      "name": "freeaddrinfo",
+      "kind": "void"
+    },
+    {
+      "slot": 131,
+      "name": "getaddrinfo",
+      "kind": "scalar"
+    },
+    {
+      "slot": 132,
+      "name": "gai_strerror",
+      "kind": "ptr"
+    },
+    {
+      "slot": 133,
+      "name": "getnameinfo",
+      "kind": "scalar"
+    },
+    {
+      "slot": 134,
+      "kind": "reserved"
+    },
+    {
+      "slot": 135,
+      "kind": "reserved"
+    },
+    {
+      "slot": 136,
+      "kind": "reserved"
+    },
+    {
+      "slot": 137,
+      "kind": "reserved"
+    },
+    {
+      "slot": 138,
+      "kind": "reserved"
+    },
+    {
+      "slot": 139,
+      "kind": "reserved"
+    }
+  ]
+}

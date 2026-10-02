@@ -12,3 +12,18 @@ become an internal dependency of the ACNet socket core, HostSocket provider,
 `usergroup.library` is likewise not part of the ACNet core.  If a particular
 legacy runtime requires it, treat it as an optional application-compatibility
 package with its own tests and release boundary.
+
+## Guard tail
+
+The default ACNet binary carries a failure-only compatibility guard from physical
+vector slot 57 through slot 139. These entries are not ACNet APIs. They exist so a
+program compiled for a larger legacy `bsdsocket.library` ABI receives a clean
+`ENOSYS`/NULL/FALSE result instead of jumping beyond the library.
+
+Slots 47-56 remain permanently reserved. ACNet will not reuse them. Slots 57-139
+are permanently reserved as the compatibility safety envelope. If ACNet ever adds
+new library vectors, they begin at slot 140 or later; new control/status work should
+prefer the ACNet control plane instead.
+
+`tests/guard_probe.c` raw-calls slot 57, a pointer-returning guard slot, and slot 139
+inside AmigaOS to verify the envelope fails safely.

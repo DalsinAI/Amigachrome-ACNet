@@ -1,0 +1,26 @@
+ACNet legacy-vector guard qualification - AmigaOS 3.2.3
+
+Date: 2026-10-02
+Guest: Instance-6 (ACNet OS3 Test)
+
+Library shape:
+- logical core: 56 slots
+- core implementations: 43
+- core ENOSYS stubs: 3
+- compatibility guard tail: 83 slots
+- physical table extent: 139 slots
+- library size: 20,088 bytes
+
+Regression:
+- clean-core qualification: PASS=47 FAIL=0, RC=0
+
+Raw guard probe:
+- slot 57 scalar-returning guard: PASS (-1 + ENOSYS)
+- slot 69 pointer-returning guard: PASS (NULL + ENOSYS)
+- slot 139 physical end guard: PASS (safe zero + ENOSYS)
+- GUARD PASS=3 FAIL=0, RC=0
+
+Policy:
+- slots 47-56 remain permanently reserved
+- slots 57-139 remain compatibility safety guards and are not ACNet APIs
+- future ACNet library vectors, if ever required, start at slot 140 or later

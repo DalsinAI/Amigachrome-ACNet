@@ -13,7 +13,8 @@ Verified through 2 October 2026 with AmigaOS 3.2.3 in the dedicated AmigaChrome 
 - DNS lookup of `localhost` succeeds.
 - TCP `socket`, `bind`, `listen`, `connect`, `accept`, `send`, and `recv` succeed end to end.
 - The guest loopback payload is verified and returns RC 0.
-- The default library exposes the classic 46-vector application ABI plus 10 reserved growth slots; 43 vectors are currently implemented and 3 are honest `ENOSYS` stubs.
+- The logical core exposes the classic 46-vector application ABI plus 10 permanently reserved slots; 43 vectors are implemented and 3 are honest `ENOSYS` stubs.
+- The physical table is padded safely through slot 139 with compatibility guards, so callers built for a larger legacy socket ABI fail cleanly instead of jumping beyond the library. These guard slots are not ACNet APIs.
 
 The clean-core guest qualification passes 47/47 with RC 0. The corresponding AmigaChrome HostSocket service has 21/21 host tests passing, and the ACNet-enabled native A1200 board has 89/89 board tests passing. Those host/runtime tests live in the AmigaChrome repository because they are platform-specific.
 
@@ -45,7 +46,7 @@ bsdqual
 ACNetControl
 ```
 
-The vector table is generated from ACNet's checked-in `guest/network/acnet/abi/bsdsocket-v4.json` manifest. No third-party socket-library SFD is read by the default build.
+The vector table is generated from ACNet's checked-in `guest/network/acnet/abi/bsdsocket-v4.json` manifest. No third-party socket-library SFD is read by the default build. The compatibility guard layout is a checked-in safety manifest under `guest/network/acnet/compat/`.
 
 ## Scope
 

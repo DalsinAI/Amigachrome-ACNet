@@ -7,11 +7,12 @@ ACNet's default `bsdsocket.library` is now independent of Roadshow-specific ABI 
 Current build outputs:
 
 - `acnet.device`: 3,628 bytes
-- `bsdsocket.library`: 19,316 bytes
+- `bsdsocket.library`: 20,088 bytes
 - `acnettest`: 5,208 bytes
 - `bsdqual`: 16,928 bytes
 - `ACNetControl`: 11,932 bytes
-- ABI: 46 classic application vectors + 10 reserved slots
+- logical core ABI: 46 classic application vectors + 10 permanently reserved slots
+- physical vector table: 139 slots (56 core/reserved + 83 compatibility guards)
 - implemented application vectors: 43
 - honest core stubs: 3 (`getnetbyname`, `getnetbyaddr`, `gethostid`)
 
@@ -19,6 +20,7 @@ Qualification:
 
 - clean-core guest qualification: 47/47 pass, RC 0
 - tiny DNS/TCP guest smoke: PASS, RC 0
+- compatibility guard probe: 3/3 pass (slot 57 scalar, slot 69 pointer, slot 139 end-of-table)
 - HostSocket host tests: 21/21 pass
 - ACNet-enabled native A1200 board tests: 89/89 pass
 - C-Dogs SDL fresh rebuild: RC 0
@@ -29,6 +31,7 @@ Core boundary:
 - no third-party socket-library SFD is read by the default build
 - stack-specific routing/interface/monitoring/BPF/mbuf/administrative APIs are outside core
 - optional legacy compatibility belongs under `guest/network/acnet/compat/`
+- slots 47-139 are never reused by ACNet; future library extensions begin at slot 140 or later
 - `usergroup.library` is not an ACNet networking dependency
 
 ## 2026-10-01 - First Light
