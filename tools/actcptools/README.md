@@ -6,7 +6,7 @@ ACTCPTools is the classic-Amiga command-line tool set used to qualify ACNet.
 
 The tools are ordinary AmigaOS programs. They use the published `bsdsocket.library` API only:
 
-`ACTCPTools -> bsdsocket.library (ACNet) -> acnet.device -> ACNet card -> Linux HostSocket`
+`ACTCPTools -> bsdsocket.library -> acnetwork.library -> acnet.device -> ACNet card -> Linux HostSocket`
 
 They do not call HostSocket, ACNet private vectors, or AmigaChrome host APIs directly.
 
@@ -16,8 +16,8 @@ They do not call HostSocket, ACNet private vectors, or AmigaChrome host APIs dir
 | --- | --- | --- | --- |
 | `hostname` | PASS | Expected now | `gethostname()` is already ACNet-qualified. |
 | `resolve` | PASS | Expected now | Uses `gethostbyname()` and `Inet_NtoA()`. |
-| `ping` | PASS | Needs ICMP compatibility | Guest binary is complete; ACNet currently refuses raw sockets. |
-| `traceroute` | PASS | Needs ICMP compatibility | UDP probes plus ICMP Time Exceeded receive path. |
+| `ping` | PASS | PASS | End-to-end on OS 3.2.3 through ACNet's constrained ICMP compatibility path. |
+| `traceroute` | PASS | Needs ICMP Time Exceeded compatibility | Binary is complete; next lane is safe traceroute receive/transmit virtualisation. |
 | `arp` | PASS | Not in core | Requires routing/ARP query compatibility APIs. |
 
 All binaries target 68020 and AmigaOS 3.2.3.

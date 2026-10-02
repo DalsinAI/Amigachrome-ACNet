@@ -385,7 +385,7 @@ static void get_eclock_time(struct timeval * eclock_time_now)
 			/* The remainder of the EClock frequency division needs to be
 			 * normalized so that it comes out as the number of microseconds.
 			 */
-			eclock_time_now->tv_micro = (microseconds_remainder * 1000000) / eclock_frequency;
+			eclock_time_now->tv_micro = (ULONG)(((unsigned long long)microseconds_remainder * 1000000ULL) / eclock_frequency);
 		}
 		#else
 		{

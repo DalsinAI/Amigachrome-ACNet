@@ -43,7 +43,9 @@ struct SocketBase {
     BPTR seglist;                  /* the master's */
     /* per opener */
     struct Task *owner;
-    struct IOStdReq *dev_io;       /* acnet.device, opened per opener */
+    struct Library *network;       /* acnetwork.library, opened per BSD opener */
+    ULONG provider_sigmask;        /* event signal owned by acnetwork.library */
+    struct IOStdReq *dev_io;       /* legacy direct-provider fields, currently unused */
     struct Library *dev;
     struct ACNWaiter waiter;
     BYTE sigbit;
