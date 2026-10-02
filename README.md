@@ -4,19 +4,18 @@ ACNet is the Amiga-side networking project developed for AmigaChrome. It provide
 
 The public repository contains the reusable guest networking project. AmigaChrome-specific machine emulation, native bridge integration, Cradle UI/configuration, and instance lifecycle code remain in the main AmigaChrome repository.
 
-## First-light status
+## Current status
 
-Verified on 1 October 2026 with AmigaOS 3.2.3 in the dedicated AmigaChrome ACNet test instance:
+Verified through 2 October 2026 with AmigaOS 3.2.3 in the dedicated AmigaChrome ACNet test instance:
 
 - `bsdsocket.library` opens successfully.
 - `gethostname()` succeeds.
 - DNS lookup of `localhost` succeeds.
 - TCP `socket`, `bind`, `listen`, `connect`, `accept`, `send`, and `recv` succeed end to end.
 - The guest loopback payload is verified and returns RC 0.
-- The current NDK 3.2 SFD expands to 139 vector slots.
 - The default library exposes the classic 46-vector application ABI plus 10 reserved growth slots; 43 vectors are currently implemented and 3 are honest `ENOSYS` stubs.
 
-The corresponding AmigaChrome HostSocket service has 20/20 host tests passing, and the ACNet-enabled native A1200 board has 89/89 board tests passing. Those host/runtime tests live in the AmigaChrome repository because they are platform-specific.
+The clean-core guest qualification passes 47/47 with RC 0. The corresponding AmigaChrome HostSocket service has 21/21 host tests passing, and the ACNet-enabled native A1200 board has 89/89 board tests passing. Those host/runtime tests live in the AmigaChrome repository because they are platform-specific.
 
 ## Repository layout
 
@@ -42,9 +41,11 @@ A successful build produces:
 acnet.device
 bsdsocket.library
 acnettest
+bsdqual
+ACNetControl
 ```
 
-The vector table is generated from the local NDK SFD at build time so the public tree does not carry proprietary NDK material.
+The vector table is generated from ACNet's checked-in `guest/network/acnet/abi/bsdsocket-v4.json` manifest. No third-party socket-library SFD is read by the default build.
 
 ## Scope
 
