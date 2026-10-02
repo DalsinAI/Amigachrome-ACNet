@@ -1,0 +1,40 @@
+ACTCPTools first-light - AmigaOS 3.2.3 / ACNet
+
+Date: 2026-10-02
+Branch: tools/os323-tcpip-20261002
+Guest: Instance-6 (ACNet OS3 Test)
+Target: AmigaOS 3.2.3 / m68k-68020
+
+Architecture under test:
+ACTCPTools -> bsdsocket.library (ACNet) -> acnet.device -> ACNet card -> Linux HostSocket
+
+Build results:
+- hostname: PASS, AmigaOS LoadSeg
+- resolve: PASS, AmigaOS LoadSeg
+- ping: PASS, AmigaOS LoadSeg; integer RTT timing, no double helper dependency
+- traceroute: PASS, AmigaOS LoadSeg; integer RTT timing, no double helper dependency
+- arp: PASS, AmigaOS LoadSeg; runtime routing API intentionally absent from ACNet core
+
+Live guest results:
+- actcp-hostname: RC=0, output: instance-6
+- actcp-resolve localhost: RC=0, output: Name: localhost / Address: 127.0.0.1
+- actcp-ping 127.0.0.1: RC=1, expected current boundary because ACNet refuses SOCK_RAW
+
+The first two commands used only published bsdsocket.library calls and no ACNet-private interface.
+Host ICMP capability check:
+- unprivileged AF_INET/SOCK_RAW/IPPROTO_ICMP: EPERM
+- unprivileged AF_INET/SOCK_DGRAM/IPPROTO_ICMP: OPEN_OK
+- Linux ping_group_range permits the current user group
+
+Implication:
+- ping should remain a conventional guest SOCK_RAW/IPPROTO_ICMP client.
+- ACNet can virtualise that guest socket using Linux's permitted datagram ICMP socket.
+- unrestricted host raw-socket capability is neither required nor desired.
+- traceroute should use a normal UDP transmit socket with IP_TTL; ACNet already forwards IP_TTL.
+- traceroute still needs a compatible ICMP Time Exceeded receive path.
+
+Environment hygiene:
+- S:User-Startup was backed up before the test and restored byte-for-byte afterward.
+- Restored SHA-256: 6a4a562523fb45f08a5d6699111d0785013225b967ff8c2be234327516e8b3a9
+- Instance-6 runtime was shut down after the test.
+- Other AmigaChrome instances were not touched.
