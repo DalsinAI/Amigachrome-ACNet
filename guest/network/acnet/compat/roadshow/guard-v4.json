@@ -1,5 +1,6 @@
 {
   "name": "Known legacy bsdsocket extension guard tail",
+  "includes": ["<net/route.h>"],
   "first_slot": 57,
   "last_slot": 139,
   "slots": [
@@ -61,12 +62,16 @@
     {
       "slot": 68,
       "name": "FreeRouteInfo",
-      "kind": "void"
+      "kind": "void",
+      "ret": "VOID",
+      "args": [["struct rt_msghdr *", "buf", "a0"]]
     },
     {
       "slot": 69,
       "name": "GetRouteInfo",
-      "kind": "ptr"
+      "kind": "ptr",
+      "ret": "struct rt_msghdr *",
+      "args": [["LONG", "address_family", "d0"], ["LONG", "flags", "d1"]]
     },
     {
       "slot": 70,

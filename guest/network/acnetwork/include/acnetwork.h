@@ -9,6 +9,19 @@
 #define ACNETWORK_STATE_CARD   0x01
 #define ACNETWORK_STATE_ONLINE 0x02
 
+#define ACNETWORK_CMD_NEIGHBOURS 0x35
+#define ACNETWORK_NEIGH_VALID    0x01
+
+struct ACNetworkNeighbour {
+    UBYTE ipv4[4];
+    UBYTE mac[6];
+    UBYTE state;
+    UBYTE reserved;
+    ULONG ifindex;
+    char ifname[16];
+};
+typedef char ACNetworkNeighbour_size_must_be_32[(sizeof(struct ACNetworkNeighbour) == 32) ? 1 : -1];
+
 struct ACNetworkRequest {
     ULONG command;
     ULONG arg[4];
