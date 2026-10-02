@@ -37,8 +37,7 @@ static void test_basics(void)
     char host[64];
     struct hostent *he;
     struct protoent *pe;
-    struct in_addr a, b;
-    char text[32];
+    struct in_addr a;
 
     result("getdtablesize >= 32", getdtablesize() >= 32);
     result("gethostname", gethostname(host, sizeof(host)) == 0 && host[0] != 0);
@@ -56,11 +55,9 @@ static void test_basics(void)
     pe = getprotobynumber(17);
     result("getprotobynumber udp", pe && pe->p_proto == 17);
 
-    result("inet_aton 127.0.0.1", inet_aton("127.0.0.1", &a) == 1);
+    a.s_addr = inet_addr("127.0.0.1");
+    result("inet_addr 127.0.0.1", a.s_addr != (in_addr_t)0xffffffffUL);
     result("Inet_NtoA roundtrip", strcmp(Inet_NtoA(a.s_addr), "127.0.0.1") == 0);
-    result("inet_pton IPv4", inet_pton(AF_INET, "10.20.30.40", &b) == 1);
-    memset(text, 0, sizeof(text));
-    result("inet_ntop IPv4", inet_ntop(AF_INET, &b, text, sizeof(text)) != NULL && strcmp(text, "10.20.30.40") == 0);
 }
 
 static void test_tcp(void)
@@ -80,7 +77,7 @@ static void test_tcp(void)
     bindaddr.sin_len = sizeof(bindaddr);
     bindaddr.sin_family = AF_INET;
     bindaddr.sin_port = htons(23451);
-    inet_aton("127.0.0.1", &bindaddr.sin_addr);
+    bindaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     ls = socket(AF_INET, SOCK_STREAM, 0);
     result("TCP socket listener", ls >= 0);
@@ -162,7 +159,7 @@ static void test_udp(void)
     dst.sin_len=sizeof(dst);
     dst.sin_family=AF_INET;
     dst.sin_port=htons(23452);
-    inet_aton("127.0.0.1",&dst.sin_addr);
+    dst.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     rs=socket(AF_INET,SOCK_DGRAM,0);
     ss=socket(AF_INET,SOCK_DGRAM,0);

@@ -45,7 +45,7 @@ LONG bsd_recvfrom(struct SocketBase *sb,LONG s,APTR buf,LONG len,LONG flags,stru
 
 /* ---- scatter/gather message I/O -------------------------------------------
  *
- * Roadshow exposes sendmsg()/recvmsg().  HostSocket deliberately transports
+ * The classic Amiga socket ABI exposes sendmsg()/recvmsg(). HostSocket transports
  * one contiguous payload, so gather/scatter lives here in the guest library.
  * Ancillary data is not part of ACNet v1.
  */

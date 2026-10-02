@@ -34,7 +34,7 @@ struct FD {
     ULONG eventmask;
 };
 
-/* Every OpenLibrary gets a base of its own, as AmiTCP and Roadshow give: the
+/* Every OpenLibrary gets a base of its own, as classic Amiga socket libraries give: the
  * master's jump table and Library header are copied in front of it. */
 struct SocketBase {
     struct Library lib;

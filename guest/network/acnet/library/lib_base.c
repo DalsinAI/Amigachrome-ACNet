@@ -1,6 +1,6 @@
 /* ACNet bsdsocket.library: the library itself. Its ROMTag, its init, and a
  * base per OpenLibrary: the master's jump table and Library header are
- * copied in front of each opener's own state, as AmiTCP and Roadshow do,
+ * copied in front of each opener's own state, as classic Amiga socket libraries do,
  * so errno, signals and descriptors belong to the opener. BSD-3-Clause. */
 #include <exec/types.h>
 #include <exec/memory.h>

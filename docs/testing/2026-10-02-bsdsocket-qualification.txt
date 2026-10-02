@@ -39,7 +39,7 @@ Third-party ENet probe:
 - graceful exit: ENET_ACNET_RESULT=PASS, ENET_RC=0
 
 Compatibility defects found and fixed by the ENet probe:
-1. Roadshow sendmsg()/recvmsg() vectors were still stubs. They are now implemented in
+1. The classic sendmsg()/recvmsg() vectors were still stubs. They are now implemented in
    bsdsocket.library as bounded gather/scatter wrappers over the proven HostSocket path.
 2. An unbound UDP client receives a kernel-assigned ephemeral source port on first send.
    HostSocket now learns that endpoint so a guest-loopback peer can reply to it.
@@ -47,5 +47,5 @@ Compatibility defects found and fixed by the ENet probe:
 The HostSocket endpoint-learning repair lives in the AmigaChrome networking branch and is
 covered by a bidirectional unbound-UDP loopback regression test.
 
-This is a compatibility/first-qualification gate, not a claim of complete Roadshow ABI coverage.
-Advanced Roadshow/BPF/mbuf/administrative vectors remain deliberate stubs.
+This is a compatibility/first-qualification gate for ACNet's classic application ABI.
+Stack-specific BPF/mbuf/routing/monitoring/administrative interfaces are outside the default core.

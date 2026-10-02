@@ -14,7 +14,7 @@ Verified on 1 October 2026 with AmigaOS 3.2.3 in the dedicated AmigaChrome ACNet
 - TCP `socket`, `bind`, `listen`, `connect`, `accept`, `send`, and `recv` succeed end to end.
 - The guest loopback payload is verified and returns RC 0.
 - The current NDK 3.2 SFD expands to 139 vector slots.
-- 46 vectors currently have implementations; advanced Roadshow/BPF/mbuf/administrative interfaces remain explicit stubs.
+- The default library exposes the classic 46-vector application ABI plus 10 reserved growth slots; 43 vectors are currently implemented and 3 are honest `ENOSYS` stubs.
 
 The corresponding AmigaChrome HostSocket service has 20/20 host tests passing, and the ACNet-enabled native A1200 board has 89/89 board tests passing. Those host/runtime tests live in the AmigaChrome repository because they are platform-specific.
 
@@ -30,7 +30,7 @@ The corresponding AmigaChrome HostSocket service has 20/20 host tests passing, a
 
 ## Building
 
-The NDK is deliberately not redistributed in this repository. Set `STOVE` to an AmigaOS 3.x cross-build environment containing `m68k-amigaos-gcc` and the AmigaOS 3.2/Roadshow NDK material, including `bsdsocket_lib.sfd`.
+The NDK is deliberately not redistributed in this repository. Set `STOVE` to an AmigaOS 3.x cross-build environment containing `m68k-amigaos-gcc` and the standard AmigaOS networking headers. ACNet owns its ABI manifest; no third-party socket-library SFD is required.
 
 ```sh
 STOVE=/path/to/os32 ./guest/network/acnet/build.sh ./build/acnet
@@ -48,7 +48,7 @@ The vector table is generated from the local NDK SFD at build time so the public
 
 ## Scope
 
-ACNet is currently an alpha implementation. The near-term compatibility campaign covers `WaitSelect`, UDP, non-blocking I/O, socket timeouts/options, name/service lookups, and normal Amiga TCP/IP applications. Full Roadshow administrative API parity is not claimed yet.
+ACNet is currently an alpha implementation. The near-term compatibility campaign covers `WaitSelect`, UDP, non-blocking I/O, socket timeouts/options, name/service lookups, and normal Amiga TCP/IP applications. Stack-specific administration APIs are outside the core contract.
 
 ## AmigaChrome integration
 

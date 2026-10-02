@@ -33,4 +33,4 @@ Next qualification targets:
 4. `getsockopt`/`setsockopt` coverage.
 5. DNS, service, and address conversion edge cases.
 6. Real-world Amiga TCP/IP application compatibility.
-7. Broader Roadshow vector coverage where useful.
+7. Add optional legacy-stack compatibility only where real applications require it.

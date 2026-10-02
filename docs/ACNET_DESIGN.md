@@ -9,7 +9,7 @@ This is the build design. It takes the 30 September designs (capsules ACNet BSDS
 
 | Part | What it is |
 | --- | --- |
-| `LIBS:bsdsocket.library` | ACNet. Our own library, free (BSD-3), with the published bsdsocket interface. It is not Roadshow and owes nothing to AmiTCP. It has no TCP of its own and does not use SANA-II. |
+| `LIBS:bsdsocket.library` | ACNet. Our own BSD-3 library implementing the classic Amiga BSD socket application interface over HostSocket. It has no TCP stack of its own and does not require SANA-II. |
 | ACNet, the card | A Zorro II card in the autoconfig chain: Dalsin, product 6, 64 KB. ShowConfig and SysInfo list it. It is fitted while the instance's Network switch is on. |
 | `DEVS:acnet.device` | The one driver that touches the card's HostSocket block. It owns the lock and the interrupt and wakes waiting tasks. It gives the library private direct calls, with no I/O request per packet. |
 | `DEVS:acwifi.device` | Control of the host's Wi-Fi through the same card: scan, status, join, leave, forget. |
@@ -40,16 +40,16 @@ Linux does the TCP/IP. The Amiga side is a thin layer that tests can pin down. T
 
 ## 3. bsdsocket.library
 
-- **Interface.** All 131 vectors of `bsdsocket_lib.sfd` from NDK 3.2's SANA+RoadshowTCP-IP set. They are generated from the SFD at build time, so the NDK stays local and no offset is typed by hand. A call the library does not provide sets ENOSYS and returns failure.
-- **Per opener.** Every OpenLibrary returns a base of its own, as AmiTCP and Roadshow do. Each base holds its own descriptors, errno (and SetErrnoPtr), signals (SetSocketSignals and SocketBaseTags), h_errno and name buffers. Closing it closes its sockets.
+- **Interface.** ACNet owns a checked-in classic Amiga BSD socket ABI manifest: 46 application vectors followed by 10 reserved growth slots. The vector table is generated from that manifest, not from a third-party stack SFD. Missing core calls return `ENOSYS` honestly.
+- **Per opener.** Every `OpenLibrary()` returns a base of its own, following the classic Amiga socket model. Each base holds its own descriptors, errno, signals, h_errno and name buffers. Closing it closes its sockets.
 - **Waiting.**
   - Blocking calls, WaitSelect and name lookups sleep on Exec signals. The device's interrupt wakes them; nothing polls.
   - Ctrl-C (or the opener's break mask) interrupts a wait with EINTR.
   - WaitSelect takes the caller's signal mask and a timeout (timer.device).
 - **Name lookups** run on the host, asynchronously, so a slow DNS server never freezes the machine. gethostbyname, gethostbyaddr, getservbyname and getservbyport are answered by the host. Protocols come from a small built-in table.
 - **Moving sockets between tasks.** ObtainSocket, ReleaseSocket, ReleaseCopyOfSocket and Dup2Socket work. Servers started inetd-style depend on them.
-- **Interfaces and routes.** The Roadshow interface and route calls report one interface, `acnet0`, which is the host's view. The calls that would change it return EPERM.
-- **Version:** 4.x, the AmiTCP/Roadshow line. The id string says ACNet.
+- **Interfaces and routes.** ACNet core does not expose another stack's interface/routing administration API. ACNetControl obtains configuration and status through ACNet's own control plane.
+- **Version:** 4.x, preserving the classic Amiga `bsdsocket.library` application ABI. The id string says ACNet.
 
 ## 4. acnet.device
 
@@ -59,7 +59,7 @@ Linux does the TCP/IP. The Amiga side is a thin layer that tests can pin down. T
   - `ACN_AddWaiter` and `ACN_RemWaiter`: a task and its signal, woken on each event.
   - `ACN_State`: present, and online.
 - The library opens it once per opener and calls those vectors directly.
-- **Later:** a SANA-II side in the same file, for AROS, Roadshow and packet tools. It is never on the library's path.
+- **Later:** a packet-oriented compatibility path may be added for tools that genuinely need one. It remains independent of the application socket path.
 
 ## 5. acwifi.device
 
@@ -103,7 +103,7 @@ The registers and commands are in `vendor/amigachrome-guest/common/protocol/acho
 ## 9. Cradle
 
 - The hardware panel gains a **Network** switch and a **Host Wi-Fi control** switch. Both are off.
-- Switching Network on fits the card from the next reboot and installs `LIBS:bsdsocket.library`, `DEVS:acnet.device`, `DEVS:acwifi.device` and `SYS:Tools/Commodities/ACNetControl` into an OS 3.2.3 instance's System volume. It does not overwrite an existing `bsdsocket.library` that isn't ACNet, such as Roadshow; it reports it instead.
+- Switching Network on fits the card from the next reboot and installs `LIBS:bsdsocket.library`, `DEVS:acnet.device`, `DEVS:acwifi.device` and `SYS:Tools/Commodities/ACNetControl` into an OS 3.2.3 instance's System volume. It does not overwrite an existing third-party `bsdsocket.library`; it reports the conflict instead.
 
 ## 10. Quality bar
 

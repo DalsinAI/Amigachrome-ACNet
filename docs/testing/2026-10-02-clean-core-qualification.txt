@@ -1,0 +1,42 @@
+ACNet clean-core bsdsocket.library qualification - AmigaOS 3.2.3
+
+Date: 2026-10-02
+Branch: refactor/clean-amiga-bsdsocket-core
+Guest: Instance-6 (ACNet OS3 Test)
+Target: AmigaOS 3.2.3 / m68k
+
+Build boundary:
+- ACNet-owned ABI manifest: guest/network/acnet/abi/bsdsocket-v4.json
+- 56 slots: 46 classic application vectors + 10 reserved growth slots
+- 43 implemented application vectors
+- 3 honest core stubs
+- no third-party socket-library SFD read by the default build
+- generated bsdsocket.library size: 19,316 bytes
+
+Direct guest result:
+PASS=47 FAIL=0, RC=0
+
+Covered in the clean-core run:
+- OpenLibrary/version and descriptor table
+- hostname, forward and reverse DNS
+- protocol lookup
+- classic IPv4 inet_addr/Inet_NtoA conversion
+- TCP socket/bind/listen/connect/accept
+- getsockname/getpeername
+- send/recv
+- WaitSelect readiness and empty polling
+- FIONREAD and FIONBIO
+- SO_RCVTIMEO set/get
+- Dup2Socket
+- ReleaseCopyOfSocket/ObtainSocket
+- UDP bind/sendto/WaitSelect/FIONREAD/recvfrom
+- UDP sendmsg/recvmsg with scatter/gather iovecs
+- bad-descriptor errno
+- SetErrnoPtr propagation
+- 128 socket open/close cycles
+
+The separate tiny acnettest also passed through library open, hostname, DNS localhost,
+TCP loopback and clean exit with RC=0 against this exact clean-core library.
+
+Stack-specific routing, interface administration, monitoring, BPF, mbuf/kernel-memory,
+packet-filter and global-stack-data APIs are intentionally not part of this default core.
