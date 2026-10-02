@@ -28,13 +28,14 @@ def main():
         raise SystemExit("usage: gen_vectors.py ABI OUT.c IMPL.c [...] [--guard GUARD.json]")
     abi,out,*impls=argv
     spec=json.load(open(abi,encoding='utf-8'))
+    guard_spec=json.load(open(guard_path,encoding='utf-8')) if guard_path else None
     if spec.get('bias') != 30: raise SystemExit('unexpected ABI bias')
 
     have=set()
     for impl in impls:
         have |= set(re.findall(r'^\w[\w\s\*]*?\bbsd_(\w+)\s*\(',open(impl,encoding='latin-1').read(),re.M))
 
-    inc=spec.get('includes',[])
+    inc=list(spec.get('includes',[])) + (list(guard_spec.get('includes',[])) if guard_spec else [])
     protos=['/* Generated from ACNet ABI manifest: do not edit. */',
             '#ifndef BSDSOCKET_PROTOS_H','#define BSDSOCKET_PROTOS_H',
             '#include "acnet_lib.h"']+[f'#include {x}' for x in inc]+['']
@@ -67,8 +68,9 @@ def main():
         table.append(f'(APTR)LIB_{name}')
 
     guard_slots=0
+    guard_impl=0
     if guard_path:
-        guard=json.load(open(guard_path,encoding='utf-8'))
+        guard=guard_spec
         expected=core_slots+1
         if guard.get('first_slot') != expected:
             raise SystemExit(f'guard starts at slot {guard.get("first_slot")}, expected {expected}')
@@ -90,7 +92,19 @@ def main():
             kind=e.get('kind')
             if kind not in ('scalar','ptr','bool','void','reserved'):
                 raise SystemExit(f'unknown guard kind {kind} at slot {expected}')
-            table.append(f'(APTR)ACNET_GUARD_{kind}')
+            name,ret,args=e.get('name'),e.get('ret'),e.get('args',[])
+            if ret and name in have:
+                protos.append(f"{ret} bsd_{name}("+
+                              ', '.join(['struct SocketBase *sb']+[f'{t} {n}' for t,n,_ in args])+');')
+                params=', '.join([f'REG({reg}, {typ} {arg})' for typ,arg,reg in args]+
+                                 ['REG(a6, struct SocketBase *sb)'])
+                call=', '.join(['sb']+[arg for _,arg,_ in args])
+                stmt=f'bsd_{name}({call});' if ret=='VOID' else f'return bsd_{name}({call});'
+                body.append(f'static {ret} LIB_{name}({params}) {{ {stmt} }}')
+                table.append(f'(APTR)LIB_{name}')
+                guard_impl += 1
+            else:
+                table.append(f'(APTR)ACNET_GUARD_{kind}')
             expected += 1
             guard_slots += 1
 
@@ -102,9 +116,9 @@ def main():
     for i in range(0,len(table),4):
         body.append('    '+', '.join(table[i:i+4])+',')
     body += ['    (APTR)-1','};',
-             f'/* core: {core_slots} slots, {done} implemented, {stubs} stubs; guard: {guard_slots} slots. */']
+             f'/* core: {core_slots} slots, {done} implemented, {stubs} stubs; guard: {guard_slots} slots, {guard_impl} implemented. */']
     open(out,'w').write('\n'.join(body)+'\n')
-    print(f'{out}: core {core_slots} slots ({done} implemented, {stubs} stubs), guard {guard_slots}, physical {len(table)}')
+    print(f'{out}: core {core_slots} slots ({done} implemented, {stubs} stubs), guard {guard_slots} ({guard_impl} implemented), physical {len(table)}')
 
 if __name__=='__main__':
     main()

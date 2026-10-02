@@ -25,5 +25,10 @@ are permanently reserved as the compatibility safety envelope. If ACNet ever add
 new library vectors, they begin at slot 140 or later; new control/status work should
 prefer the ACNet control plane instead.
 
+Application evidence from ACTCPTools `arp` now enables two slots inside that envelope:
+`FreeRouteInfo` (68) and `GetRouteInfo` (69). The implementation is deliberately
+read-only and accepts only the IPv4 `RTF_LLINFO` neighbour-table query. All route
+mutation and all other Roadshow extension slots remain guarded/failure-only.
+
 `tests/guard_probe.c` raw-calls slot 57, a pointer-returning guard slot, and slot 139
 inside AmigaOS to verify the envelope fails safely.

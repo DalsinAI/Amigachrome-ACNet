@@ -14,11 +14,11 @@ They do not call HostSocket, ACNet private vectors, or AmigaChrome host APIs dir
 
 | Tool | OS3 build | ACNet runtime | Notes |
 | --- | --- | --- | --- |
-| `hostname` | PASS | Expected now | `gethostname()` is already ACNet-qualified. |
-| `resolve` | PASS | Expected now | Uses `gethostbyname()` and `Inet_NtoA()`. |
-| `ping` | PASS | PASS | End-to-end on OS 3.2.3 through ACNet's constrained ICMP compatibility path. |
-| `traceroute` | PASS | Needs ICMP Time Exceeded compatibility | Binary is complete; next lane is safe traceroute receive/transmit virtualisation. |
-| `arp` | PASS | Not in core | Requires routing/ARP query compatibility APIs. |
+| `hostname` | PASS | PASS | End-to-end through ACNet `gethostname()`. |
+| `resolve` | PASS | PASS | Forward lookup through ACNet name service. |
+| `ping` | PASS | PASS | End-to-end through ACNet's constrained ICMP compatibility path. |
+| `traceroute` | PASS | PASS | Raw-UDP guest probes are translated through Linux UDP/error-queue ICMP. |
+| `arp` | PASS | PASS (read-only) | `arp -a -n` uses Roadshow `GetRouteInfo()` compatibility over ACNet neighbour enumeration. |
 
 All binaries target 68020 and AmigaOS 3.2.3.
 ## Building

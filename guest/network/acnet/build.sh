@@ -27,7 +27,7 @@ STOVE="$STOVE" "$GUEST/network/acnetwork/build.sh" "$OUT"
 
 L="$HERE/library"
 # lib_base.c first: its start() must be the library's first code.
-LIB="$L/lib_base.c $L/lib_fd.c $L/lib_errno.c $L/lib_tags.c $L/lib_strings.c $L/lib_select.c $L/lib_conn.c $L/lib_io.c $L/lib_opt.c $L/lib_names.c $L/lib_inet.c"
+LIB="$L/lib_base.c $L/lib_fd.c $L/lib_errno.c $L/lib_tags.c $L/lib_strings.c $L/lib_select.c $L/lib_conn.c $L/lib_io.c $L/lib_opt.c $L/lib_names.c $L/lib_inet.c $HERE/compat/roadshow/routes.c"
 python3 "$HERE/library/gen_vectors.py" "$ABI" "$OUT/bsdsocket_vectors.c" $LIB --guard "$GUARD"
 "$CC" $BARE $INC -I"$HERE/library" -I"$OUT" -o "$OUT/bsdsocket.library" \
     $LIB "$HERE/library/provider_acnetwork.c" "$OUT/bsdsocket_vectors.c" "$GUEST/common/os3/string.c" -lgcc

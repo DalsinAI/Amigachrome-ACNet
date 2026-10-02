@@ -86,6 +86,7 @@
                                             rx: name\0 then count x 4-byte address; ERRNO holds h_errno on failure */
 #define ACHS_CMD_SERVICE          0x33   /* port (0: by name), max; tx: name\0proto\0 -> port; rx: name\0 */
 #define ACHS_CMD_HOSTNAME         0x34   /* rx: the instance's host name\0 */
+#define ACHS_CMD_NEIGHBOURS       0x35   /* a0=max records; rx: ACNetworkNeighbour records */
 
 /* POLL events (poll(2)'s values). */
 #define ACHS_POLLIN               0x0001
