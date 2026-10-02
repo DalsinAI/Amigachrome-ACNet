@@ -2,10 +2,11 @@ ACNet bsdsocket.library qualification - AmigaOS 3.2.3
 
 Guest: Instance-6 (ACNet OS3 Test)
 Target: AmigaOS 3.2.3 / m68k
-Result: PASS=46 FAIL=0, RC=0
-HostSocket regression: 20/20 PASS
+Direct guest result: PASS=49 FAIL=0, RC=0
+HostSocket regression: 21/21 PASS
+Third-party middleware probe: ENet PASS, RC=0
 
-Covered:
+Direct guest coverage:
 - OpenLibrary/version and descriptor table
 - hostname, forward and reverse DNS
 - protocol lookup
@@ -19,9 +20,32 @@ Covered:
 - Dup2Socket
 - ReleaseCopyOfSocket/ObtainSocket
 - UDP bind/sendto/WaitSelect/FIONREAD/recvfrom
+- UDP sendmsg with two iovec buffers
+- UDP recvmsg scatter into two iovec buffers
 - bad-descriptor errno
 - SetErrnoPtr propagation
 - 128 socket open/close cycles
+
+Third-party ENet probe:
+- Source family: the pinned ENet used by the C-Dogs/OpenOMF Amiga game-port lane.
+- Built as a 68020 AmigaOS LoadSeg executable against the OS 3.2 stove.
+- The test program used ENet's public API only; it did not call ACNet internals.
+- Server host creation: PASS
+- Client host creation: PASS
+- 127.0.0.1 address setup: PASS
+- ENet connect handshake: PASS
+- reliable client -> server packet: PASS
+- reliable server -> client packet: PASS
+- graceful exit: ENET_ACNET_RESULT=PASS, ENET_RC=0
+
+Compatibility defects found and fixed by the ENet probe:
+1. Roadshow sendmsg()/recvmsg() vectors were still stubs. They are now implemented in
+   bsdsocket.library as bounded gather/scatter wrappers over the proven HostSocket path.
+2. An unbound UDP client receives a kernel-assigned ephemeral source port on first send.
+   HostSocket now learns that endpoint so a guest-loopback peer can reply to it.
+
+The HostSocket endpoint-learning repair lives in the AmigaChrome networking branch and is
+covered by a bidirectional unbound-UDP loopback regression test.
 
 This is a compatibility/first-qualification gate, not a claim of complete Roadshow ABI coverage.
 Advanced Roadshow/BPF/mbuf/administrative vectors remain deliberate stubs.

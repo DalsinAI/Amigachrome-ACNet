@@ -181,6 +181,34 @@ static void test_udp(void)
     memset(&from,0,sizeof(from)); flen=sizeof(from); memset(buf,0,sizeof(buf));
     result("UDP recvfrom", recvfrom(rs,buf,4,0,(struct sockaddr*)&from,&flen)==4 && memcmp(buf,"udp!",4)==0 && from.sin_family==AF_INET);
 
+    {
+        struct iovec siov[2], riov[2];
+        struct msghdr smsg, rmsg;
+        char a[3] = {'m','s','g'}, b[2] = {'!','!'};
+        char ra[2] = {0,0}, rb[4] = {0,0,0,0};
+
+        memset(&smsg,0,sizeof(smsg));
+        siov[0].iov_base=a; siov[0].iov_len=3;
+        siov[1].iov_base=b; siov[1].iov_len=2;
+        smsg.msg_name=&dst; smsg.msg_namelen=sizeof(dst);
+        smsg.msg_iov=siov; smsg.msg_iovlen=2;
+        result("UDP sendmsg two iov", sendmsg(ss,&smsg,0)==5);
+
+        FD_ZERO(&rf); FD_SET(rs,&rf);
+        tv.tv_secs=0; tv.tv_micro=250000; sigs=0;
+        result("sendmsg WaitSelect ready", WaitSelect(rs+1,&rf,NULL,NULL,&tv,&sigs)==1 && FD_ISSET(rs,&rf));
+
+        memset(&from,0,sizeof(from));
+        memset(&rmsg,0,sizeof(rmsg));
+        riov[0].iov_base=ra; riov[0].iov_len=2;
+        riov[1].iov_base=rb; riov[1].iov_len=3;
+        rmsg.msg_name=&from; rmsg.msg_namelen=sizeof(from);
+        rmsg.msg_iov=riov; rmsg.msg_iovlen=2;
+        result("UDP recvmsg two iov", recvmsg(rs,&rmsg,0)==5 &&
+               ra[0]=='m' && ra[1]=='s' && rb[0]=='g' && rb[1]=='!' && rb[2]=='!' &&
+               from.sin_family==AF_INET && rmsg.msg_namelen==16);
+    }
+
 out:
     closes(ss); closes(rs);
 }
