@@ -41,8 +41,15 @@ if [ -f "$HERE/tests/bsdqual.c" ]; then
     echo "$OUT/bsdqual ($(wc -c < "$OUT/bsdqual") bytes)"
 fi
 
+# ACNetControl: the ReAction Commodity (AmigaOS 3.2.3) and ACNetControlGT,
+# the same pages in GadTools (AmigaOS 2.04 to 3.2); both share the core.
+# -fno-common: the programs' own library bases must win over libnix's
+# auto-open stubs, which open label.image and window.class by wrong names.
 if [ -f "$HERE/control/acnetcontrol.c" ]; then
-    "$CC" -m68000 -O2 -Wall -Wno-pointer-sign -noixemul -I"$HERE/include" \
-        -o "$OUT/ACNetControl" "$HERE/control/acnetcontrol.c" -lamiga
+    "$CC" -m68000 -O2 -fno-common -Wall -Wno-pointer-sign -noixemul -I"$HERE/include" \
+        -o "$OUT/ACNetControl" "$HERE/control/acnetcontrol.c" "$HERE/control/acnetcontrol_core.c" -lamiga
     echo "$OUT/ACNetControl ($(wc -c < "$OUT/ACNetControl") bytes)"
+    "$CC" -m68000 -O2 -fno-common -Wall -Wno-pointer-sign -noixemul -I"$HERE/include" \
+        -o "$OUT/ACNetControlGT" "$HERE/control/acnetcontrol_gt.c" "$HERE/control/acnetcontrol_core.c" -lamiga
+    echo "$OUT/ACNetControlGT ($(wc -c < "$OUT/ACNetControlGT") bytes)"
 fi

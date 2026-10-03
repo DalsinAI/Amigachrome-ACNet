@@ -1,6 +1,8 @@
 # ACNetControl Test Plan
 
 ACNetControl is the ReAction Commodity front end for ACNet on AmigaOS 3.2.3.
+ACNetControlGT is the same Commodity in GadTools for AmigaOS 2.04 to 3.2;
+both draw their pages from `acnetcontrol_core.c`. Gates 0 to 4 apply to both.
 Networking must continue to work with ACNetControl absent, hidden or killed.
 
 ## Gate 0 - Build
@@ -86,3 +88,17 @@ Use a mock NetworkManager only; automated tests must never change the real host 
 - Kill frees all resources.
 - repeated launch/unique notification does not create a second copy.
 - no-card and non-ACNet bsdsocket.library cases remain informative, not fatal.
+
+## Gate GT - the GadTools front end
+
+- Builds with `-fno-common` (without it libnix's auto-open stubs replace the
+  programs' own library bases and open label.image and window.class by wrong
+  names, so the ReAction build exits before main).
+- Opens in the screen's font; falls back to Topaz 8 when the window would not
+  fit the screen.
+- The radio list changes page; Tab and Shift-Tab, and 1 to 5, do too.
+- Resizing grows the groups; the window never shrinks below what the pages need.
+- Esc and the close gadget hide it; `ctrl alt n` and Exchange's Show bring it
+  back on the same page.
+- Starting either front end while the other runs exits quietly (RC 5) and
+  brings the running one forward.
