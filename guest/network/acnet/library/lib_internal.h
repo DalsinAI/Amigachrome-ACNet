@@ -13,8 +13,9 @@
 /* The Amiga's errno numbers the library sets itself (netinclude/sys/errno.h;
  * the host tests check the full table against NDK 3.2). */
 enum {
-    AE_PERM = 1, AE_INTR = 4, AE_BADF = 9, AE_NOMEM = 12, AE_FAULT = 14, AE_INVAL = 22,
-    AE_MFILE = 24, AE_PIPE = 32, AE_AGAIN = 35, AE_INPROGRESS = 36, AE_ALREADY = 37,
+    AE_PERM = 1, AE_INTR = 4, AE_IO = 5, AE_NXIO = 6, AE_BADF = 9, AE_NOMEM = 12, AE_FAULT = 14,
+    AE_BUSY = 16, AE_INVAL = 22, AE_MFILE = 24, AE_NOTTY = 25, AE_PIPE = 32,
+    AE_AGAIN = 35, AE_INPROGRESS = 36, AE_ALREADY = 37,
     AE_NOTSOCK = 38, AE_DESTADDRREQ = 39, AE_MSGSIZE = 40, AE_NOPROTOOPT = 42,
     AE_OPNOTSUPP = 45, AE_AFNOSUPPORT = 47, AE_NETDOWN = 50, AE_NOTCONN = 57,
     AE_TIMEDOUT = 60, AE_NOSYS = 78, AE_LAST = 81
@@ -51,7 +52,11 @@ LONG wait_items(struct SocketBase *sb, ULONG *items, ULONG *revents, LONG n,
                 const struct timeval *tv, ULONG extra, ULONG *got_extra);   /* >0 ready, 0 timeout or extra, -1 errno */
 LONG wait_ready(struct SocketBase *sb, LONG handle, ULONG events, const struct timeval *tv);
 LONG wait_event(struct SocketBase *sb);              /* the next provider event: 0, or -1 EINTR */
+LONG wait_armed_event(struct SocketBase *sb, const struct timeval *tv, ULONG extra, ULONG *got_extra);
 void timer_close(struct SocketBase *sb);
+
+/* optional Roadshow BPF compatibility */
+void bpf_close_all(struct SocketBase *sb);
 
 /* lib_names.c */
 void names_close(struct SocketBase *sb);

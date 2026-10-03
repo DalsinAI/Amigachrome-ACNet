@@ -1,0 +1,90 @@
+/* bsdsocket.library provider backed by acnetwork.library.
+ * BSD-3-Clause. */
+#include <exec/types.h>
+#include <proto/exec.h>
+
+#include <acnetwork.h>
+#include "provider.h"
+
+#define ENETDOWN 50
+
+static inline LONG net_call(struct Library *lib, struct ACNetworkRequest *request)
+{
+    register LONG d0 __asm("d0");
+    register struct ACNetworkRequest *a0 __asm("a0") = request;
+    register struct Library *a6 __asm("a6") = lib;
+    __asm volatile ("jsr -30(%%a6)" : "=r"(d0), "+r"(a0) : "r"(a6) : "d1", "a1", "cc", "memory");
+    return d0;
+}
+
+static inline void net_arm(struct Library *lib)
+{
+    register struct Library *a6 __asm("a6") = lib;
+    __asm volatile ("jsr -36(%%a6)" : : "r"(a6) : "d0", "d1", "a0", "a1", "cc", "memory");
+}
+
+static inline void net_disarm(struct Library *lib)
+{
+    register struct Library *a6 __asm("a6") = lib;
+    __asm volatile ("jsr -42(%%a6)" : : "r"(a6) : "d0", "d1", "a0", "a1", "cc", "memory");
+}
+
+static inline ULONG net_signalmask(struct Library *lib)
+{
+    register ULONG d0 __asm("d0");
+    register struct Library *a6 __asm("a6") = lib;
+    __asm volatile ("jsr -48(%%a6)" : "=r"(d0) : "r"(a6) : "d1", "a0", "a1", "cc", "memory");
+    return d0;
+}
+
+LONG prov_open(struct SocketBase *sb)
+{
+    sb->network = OpenLibrary(ACNETWORK_LIBRARY_NAME, ACNETWORK_LIBRARY_VERSION);
+    if (!sb->network) return ENETDOWN;
+    sb->provider_sigmask = net_signalmask(sb->network);
+    if (!sb->provider_sigmask) {
+        CloseLibrary(sb->network);
+        sb->network = NULL;
+        return ENETDOWN;
+    }
+    return 0;
+}
+
+void prov_close(struct SocketBase *sb)
+{
+    if (sb->network) CloseLibrary(sb->network);
+    sb->network = NULL;
+    sb->provider_sigmask = 0;
+}
+
+LONG prov_call(struct SocketBase *sb, ULONG cmd, ULONG a0, ULONG a1, ULONG a2, ULONG a3,
+               const void *tx, ULONG txlen, void *rx, ULONG rxmax, ULONG *rxlen)
+{
+    struct ACNetworkRequest request;
+    request.command = cmd;
+    request.arg[0] = a0;
+    request.arg[1] = a1;
+    request.arg[2] = a2;
+    request.arg[3] = a3;
+    request.tx = tx;
+    request.txlen = txlen;
+    request.rx = rx;
+    request.rxmax = rxmax;
+    request.result = -1;
+    request.error = ENETDOWN;
+    request.rxlen = 0;
+    if (sb->network) net_call(sb->network, &request);
+    sb->last_err = request.error;
+    if (rxlen) *rxlen = request.rxlen;
+    return request.result;
+}
+
+void prov_arm(struct SocketBase *sb)
+{
+    if (sb->network) net_arm(sb->network);
+}
+
+void prov_disarm(struct SocketBase *sb)
+{
+    if (sb->network) net_disarm(sb->network);
+}

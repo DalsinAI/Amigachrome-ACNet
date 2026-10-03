@@ -24,6 +24,7 @@ static int passes, failures;
 static void result(const char *name, int ok)
 {
     printf("%-36s %s\n", name, ok ? "PASS" : "FAIL");
+    fflush(stdout);
     if (ok) passes++; else failures++;
 }
 
@@ -50,6 +51,10 @@ static void test_basics(void)
         result("gethostbyaddr localhost", rev != NULL);
     } else result("gethostbyaddr localhost", 0);
 
+    pe = getprotobyname("icmp");
+    result("getprotobyname icmp", pe && pe->p_proto == 1);
+    pe = getprotobynumber(1);
+    result("getprotobynumber icmp", pe && pe->p_proto == 1);
     pe = getprotobyname("tcp");
     result("getprotobyname tcp", pe && pe->p_proto == 6);
     pe = getprotobynumber(17);
@@ -256,6 +261,7 @@ int main(void)
 {
     printf("ACNet bsdsocket.library qualification\n");
     printf("====================================\n");
+    fflush(stdout);
 
     SocketBase=OpenLibrary("bsdsocket.library",4);
     if(!SocketBase) {

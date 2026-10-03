@@ -1,6 +1,6 @@
 #!/bin/sh
-# ACNet for AmigaOS 3.2.3: acnet.device and bsdsocket.library (bare: no
-# startup code or C library; each ROMTag's stub comes first), and the test
+# ACNet for AmigaOS 3.2.3: acnet.device, native acnetwork.library and
+# bsdsocket.library compatibility facade (bare: no startup code or C library), plus the test
 # program acnettest (libnix), with the os32 stove (bebbo's m68k-amigaos-gcc,
 # NDK 3.2). The library vector table is generated from ACNet's own classic
 # Amiga BSD socket ABI manifest; no third-party socket SFD is required.
@@ -18,17 +18,20 @@ GUARD="$HERE/compat/roadshow/guard-v4.json"
 OUT=${1:-$GUEST/build/guest/os32/acnet}
 mkdir -p "$OUT"
 BARE="-m68020 -O2 -include sys/types.h -fomit-frame-pointer -fno-toplevel-reorder -fno-builtin -Wall -Wno-pointer-sign -nostartfiles -nostdlib"
-INC="-I$GUEST/common/protocol -I$HERE/include"
+INC="-I$GUEST/common/protocol -I$HERE/include -I$GUEST/network/acnetwork/include"
+COMPAT_INC="-I$STOVE/ndk/SANA+RoadshowTCP-IP/include"
 
-"$CC" $BARE $INC -o "$OUT/acnet.device" "$HERE/device/acnet_device.c" "$GUEST/common/os3/string.c" -lgcc
+"$CC" $BARE $INC $COMPAT_INC -o "$OUT/acnet.device" "$HERE/device/acnet_device.c" "$GUEST/common/os3/string.c" -lgcc
 echo "$OUT/acnet.device ($(wc -c < "$OUT/acnet.device") bytes)"
+
+STOVE="$STOVE" "$GUEST/network/acnetwork/build.sh" "$OUT"
 
 L="$HERE/library"
 # lib_base.c first: its start() must be the library's first code.
-LIB="$L/lib_base.c $L/lib_fd.c $L/lib_errno.c $L/lib_tags.c $L/lib_strings.c $L/lib_select.c $L/lib_conn.c $L/lib_io.c $L/lib_opt.c $L/lib_names.c $L/lib_inet.c"
+LIB="$L/lib_base.c $L/lib_fd.c $L/lib_errno.c $L/lib_tags.c $L/lib_strings.c $L/lib_select.c $L/lib_conn.c $L/lib_io.c $L/lib_opt.c $L/lib_names.c $L/lib_inet.c $HERE/compat/roadshow/routes.c $HERE/compat/roadshow/state.c $HERE/compat/roadshow/modern.c $HERE/compat/roadshow/bpf.c"
 python3 "$HERE/library/gen_vectors.py" "$ABI" "$OUT/bsdsocket_vectors.c" $LIB --guard "$GUARD"
-"$CC" $BARE $INC -I"$HERE/library" -I"$OUT" -o "$OUT/bsdsocket.library" \
-    $LIB "$HERE/library/provider_hostsocket.c" "$OUT/bsdsocket_vectors.c" "$GUEST/common/os3/string.c" -lgcc
+"$CC" $BARE $INC $COMPAT_INC -I"$HERE/library" -I"$OUT" -o "$OUT/bsdsocket.library" \
+    $LIB "$HERE/library/provider_acnetwork.c" "$OUT/bsdsocket_vectors.c" "$GUEST/common/os3/string.c" -lgcc
 echo "$OUT/bsdsocket.library ($(wc -c < "$OUT/bsdsocket.library") bytes)"
 
 if [ -f "$HERE/tests/acnettest.c" ]; then
@@ -41,15 +44,44 @@ if [ -f "$HERE/tests/bsdqual.c" ]; then
     echo "$OUT/bsdqual ($(wc -c < "$OUT/bsdqual") bytes)"
 fi
 
-# ACNetControl: the ReAction Commodity (AmigaOS 3.2.3) and ACNetControlGT,
-# the same pages in GadTools (AmigaOS 2.04 to 3.2); both share the core.
+if [ -f "$HERE/tests/roadshow_readonly_probe.c" ]; then
+    "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul \
+        -o "$OUT/roadshow-readonly-probe" "$HERE/tests/roadshow_readonly_probe.c"
+    echo "$OUT/roadshow-readonly-probe ($(wc -c < "$OUT/roadshow-readonly-probe") bytes)"
+fi
+
+if [ -f "$HERE/tests/modern_compat_probe.c" ]; then
+    "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul \
+        -o "$OUT/modern-compat-probe" "$HERE/tests/modern_compat_probe.c"
+    echo "$OUT/modern-compat-probe ($(wc -c < "$OUT/modern-compat-probe") bytes)"
+fi
+
+if [ -f "$HERE/tests/bpfprobe.c" ]; then
+    "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul $COMPAT_INC \
+        -o "$OUT/bpfprobe" "$HERE/tests/bpfprobe.c"
+    echo "$OUT/bpfprobe ($(wc -c < "$OUT/bpfprobe") bytes)"
+fi
+
+if [ -f "$HERE/tests/sana2probe.c" ]; then
+    "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul $INC $COMPAT_INC \
+        -o "$OUT/sana2probe" "$HERE/tests/sana2probe.c"
+    echo "$OUT/sana2probe ($(wc -c < "$OUT/sana2probe") bytes)"
+fi
+
+# ACNetControl: the ReAction Commodity (live control, diagnostics, log, Wi-Fi),
+# and ACNetControlGT, the GadTools Commodity on the shared core, which takes
+# its place once it has the same pages (OS 3.x programs are GadTools or MUI).
 # -fno-common: the programs' own library bases must win over libnix's
 # auto-open stubs, which open label.image and window.class by wrong names.
 if [ -f "$HERE/control/acnetcontrol.c" ]; then
-    "$CC" -m68000 -O2 -fno-common -Wall -Wno-pointer-sign -noixemul -I"$HERE/include" \
-        -o "$OUT/ACNetControl" "$HERE/control/acnetcontrol.c" "$HERE/control/acnetcontrol_core.c" -lamiga
+    "$CC" -m68000 -O2 -fno-common -Wall -Wno-pointer-sign -noixemul -I"$HERE/include" -I"$GUEST/network/acnetwork/include" -I"$GUEST/network/acwifi/include" \
+        -o "$OUT/ACNetControl" "$HERE/control/acnetcontrol.c" -lamiga
     echo "$OUT/ACNetControl ($(wc -c < "$OUT/ACNetControl") bytes)"
     "$CC" -m68000 -O2 -fno-common -Wall -Wno-pointer-sign -noixemul -I"$HERE/include" \
         -o "$OUT/ACNetControlGT" "$HERE/control/acnetcontrol_gt.c" "$HERE/control/acnetcontrol_core.c" -lamiga
     echo "$OUT/ACNetControlGT ($(wc -c < "$OUT/ACNetControlGT") bytes)"
+fi
+
+if [ -f "$GUEST/network/acwifi/build.sh" ]; then
+    sh "$GUEST/network/acwifi/build.sh" "$OUT"
 fi
