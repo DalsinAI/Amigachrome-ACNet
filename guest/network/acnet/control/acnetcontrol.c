@@ -20,8 +20,13 @@
 #include <gadgets/button.h>
 #include <gadgets/clicktab.h>
 #include <gadgets/layout.h>
+#include <gadgets/string.h>
 #include <images/label.h>
 #include <classes/window.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <stdlib.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -31,8 +36,10 @@
 #include <proto/button.h>
 #include <proto/clicktab.h>
 #include <proto/layout.h>
+#include <proto/string.h>
 #include <proto/label.h>
 #include <proto/window.h>
+#include <proto/bsdsocket.h>
 #include <clib/alib_protos.h>
 #include <stdio.h>
 
@@ -48,8 +55,10 @@ struct Library *ButtonBase = NULL;
 struct Library *ClickTabBase = NULL;
 struct Library *LabelBase = NULL;
 struct Library *LayoutBase = NULL;
+struct Library *StringBase = NULL;
 struct Library *WindowBase = NULL;
 struct Library *ACNetworkBase = NULL;
+struct Library *SocketBase = NULL;
 
 enum {
     GID_TABS = 1,
@@ -103,6 +112,13 @@ static char status_connects[64];
 static char status_refused[64];
 static char status_toggle[32];
 static char conn_lines[6][96];
+static Object *diag_name_obj;
+static Object *diag_host_obj;
+static Object *diag_port_obj;
+static char diag_name[64] = "localhost";
+static char diag_host[64] = "example.com";
+static char diag_port[8] = "80";
+static char diag_result[128] = "Ready.";
 
 static ULONG acn_state_call(struct Device *dev)
 {
@@ -404,22 +420,9 @@ static Object *wifi_page(void)
         LAYOUT_SpaceOuter, TRUE,
         LAYOUT_BevelStyle, BVS_GROUP,
         LAYOUT_Label, "Wi-Fi",
-        LINE("Host Wi-Fi control permission is reported by Cradle."),
-        LINE("Version 1 joins only networks already known by the PC."),
-        LINE("Passphrases never pass through the Amiga."),
-        LINE(""),
-        LINE("Current link  telemetry pending"),
-        LINE("SSID          telemetry pending"),
-        LINE("Signal        telemetry pending"),
-        LINE("Security      telemetry pending"),
-        LINE("Link rate     telemetry pending"),
-        LAYOUT_AddChild, ButtonObject,
-            GA_ID, GID_WIFI_RESCAN,
-            GA_Text, "Rescan",
-            GA_RelVerify, TRUE,
-            GA_Disabled, TRUE,
-        ButtonEnd,
-        CHILD_WeightedHeight, 0,
+        LINE("Wi-Fi control is not fitted in this build yet."),
+        LINE("ACNet networking remains fully usable through the host link."),
+        LINE("When acwifi.device lands this page will gain scan/join/leave controls."),
     LayoutEnd;
 }
 
@@ -441,37 +444,133 @@ static Object *connections_page(void)
     LayoutEnd;
 }
 
+
+static void copy_string_field(Object *obj, char *out, ULONG size)
+{
+    ULONG value = 0;
+    STRPTR text = NULL;
+    if (!out || size == 0) return;
+    if (obj && GetAttr(STRINGA_TextVal, obj, &value)) text = (STRPTR)value;
+    if (!text) text = (STRPTR)"";
+    strncpy(out, (char *)text, size - 1);
+    out[size - 1] = 0;
+}
+
+static void read_diag_fields(void)
+{
+    copy_string_field(diag_name_obj, diag_name, sizeof(diag_name));
+    copy_string_field(diag_host_obj, diag_host, sizeof(diag_host));
+    copy_string_field(diag_port_obj, diag_port, sizeof(diag_port));
+}
+
+static void run_dns_lookup(void)
+{
+    struct hostent *he;
+    in_addr_t addr;
+    STRPTR text;
+    read_diag_fields();
+    if (!SocketBase) {
+        strcpy(diag_result, "DNS: bsdsocket.library unavailable");
+        return;
+    }
+    he = gethostbyname((STRPTR)diag_name);
+    if (!he || !he->h_addr || he->h_length < 4) {
+        sprintf(diag_result, "DNS: %s lookup failed", diag_name);
+        return;
+    }
+    CopyMem(he->h_addr, &addr, 4);
+    text = Inet_NtoA(addr);
+    sprintf(diag_result, "DNS: %s -> %s", diag_name, text ? (char *)text : "(unknown)");
+}
+
+static void run_tcp_test(void)
+{
+    struct hostent *he;
+    struct sockaddr_in sa;
+    LONG s, port;
+    read_diag_fields();
+    port = atol(diag_port);
+    if (port < 1 || port > 65535) {
+        strcpy(diag_result, "TCP: port must be 1..65535");
+        return;
+    }
+    if (!SocketBase) {
+        strcpy(diag_result, "TCP: bsdsocket.library unavailable");
+        return;
+    }
+    he = gethostbyname((STRPTR)diag_host);
+    if (!he || !he->h_addr || he->h_length < 4) {
+        sprintf(diag_result, "TCP: %s lookup failed", diag_host);
+        return;
+    }
+    s = socket(AF_INET, SOCK_STREAM, 0);
+    if (s < 0) {
+        strcpy(diag_result, "TCP: could not create socket");
+        return;
+    }
+    memset(&sa, 0, sizeof(sa));
+    sa.sin_len = sizeof(sa);
+    sa.sin_family = AF_INET;
+    sa.sin_port = htons((UWORD)port);
+    CopyMem(he->h_addr, &sa.sin_addr.s_addr, 4);
+    if (connect(s, (struct sockaddr *)&sa, sizeof(sa)) == 0)
+        sprintf(diag_result, "TCP: %s:%ld connected", diag_host, (long)port);
+    else
+        sprintf(diag_result, "TCP: %s:%ld failed", diag_host, (long)port);
+    CloseSocket(s);
+}
+
 static Object *diagnostics_page(void)
 {
     return VGroupObject,
         LAYOUT_SpaceOuter, TRUE,
         LAYOUT_BevelStyle, BVS_GROUP,
         LAYOUT_Label, "Diagnostics",
-        LINE("Diagnostics contact outside services only when requested."),
-        LAYOUT_AddChild, ButtonObject,
-            GA_ID, GID_DIAG_DNS,
-            GA_Text, "Look up a name...",
-            GA_RelVerify, TRUE,
-            GA_Disabled, TRUE,
-        ButtonEnd,
-        LAYOUT_AddChild, ButtonObject,
-            GA_ID, GID_DIAG_CONNECT,
-            GA_Text, "Test a connection...",
-            GA_RelVerify, TRUE,
-            GA_Disabled, TRUE,
-        ButtonEnd,
-        LAYOUT_AddChild, ButtonObject,
-            GA_ID, GID_DIAG_INTERNET,
-            GA_Text, "Check the internet...",
-            GA_RelVerify, TRUE,
-            GA_Disabled, TRUE,
-        ButtonEnd,
+        LINE("Diagnostics use the public bsdsocket.library API."),
+        LAYOUT_AddChild, HGroupObject,
+            LINE("Name"),
+            LAYOUT_AddChild, diag_name_obj = StringObject,
+                STRINGA_TextVal, diag_name,
+                STRINGA_MaxChars, sizeof(diag_name) - 1,
+                GA_TabCycle, TRUE,
+            StringEnd,
+            LAYOUT_AddChild, ButtonObject,
+                GA_ID, GID_DIAG_DNS,
+                GA_Text, "Lookup",
+                GA_RelVerify, TRUE,
+                GA_Disabled, SocketBase ? FALSE : TRUE,
+            ButtonEnd,
+        LayoutEnd,
+        CHILD_WeightedHeight, 0,
+        LAYOUT_AddChild, HGroupObject,
+            LINE("Host"),
+            LAYOUT_AddChild, diag_host_obj = StringObject,
+                STRINGA_TextVal, diag_host,
+                STRINGA_MaxChars, sizeof(diag_host) - 1,
+                GA_TabCycle, TRUE,
+            StringEnd,
+            LINE("Port"),
+            LAYOUT_AddChild, diag_port_obj = StringObject,
+                STRINGA_TextVal, diag_port,
+                STRINGA_MaxChars, sizeof(diag_port) - 1,
+                GA_TabCycle, TRUE,
+            StringEnd,
+            LAYOUT_AddChild, ButtonObject,
+                GA_ID, GID_DIAG_CONNECT,
+                GA_Text, "Test TCP",
+                GA_RelVerify, TRUE,
+                GA_Disabled, SocketBase ? FALSE : TRUE,
+            ButtonEnd,
+        LayoutEnd,
+        CHILD_WeightedHeight, 0,
+        LINE(diag_result),
         LAYOUT_AddChild, ButtonObject,
             GA_ID, GID_DIAG_COPY,
             GA_Text, "Save report to RAM:",
             GA_RelVerify, TRUE,
             GA_Disabled, ACNetworkBase ? FALSE : TRUE,
         ButtonEnd,
+        CHILD_WeightedHeight, 0,
     LayoutEnd;
 }
 
@@ -481,23 +580,9 @@ static Object *log_page(void)
         LAYOUT_SpaceOuter, TRUE,
         LAYOUT_BevelStyle, BVS_GROUP,
         LAYOUT_Label, "ACNet Event Log",
-        LINE("Event ring support is the next ACNet device/HostSocket backend."),
-        LINE("Online/offline, DNS failures and policy refusals will appear here."),
-        LAYOUT_AddChild, HGroupObject,
-            LAYOUT_AddChild, ButtonObject,
-                GA_ID, GID_LOG_CLEAR,
-                GA_Text, "Clear",
-                GA_RelVerify, TRUE,
-                GA_Disabled, TRUE,
-            ButtonEnd,
-            LAYOUT_AddChild, ButtonObject,
-                GA_ID, GID_LOG_SAVE,
-                GA_Text, "Save as...",
-                GA_RelVerify, TRUE,
-                GA_Disabled, TRUE,
-            ButtonEnd,
-        LayoutEnd,
-        CHILD_WeightedHeight, 0,
+        LINE("The event ring backend is not fitted in this build yet."),
+        LINE("Current counters and connection state are live on Status/Connections."),
+        LINE("Support snapshots can be written from Diagnostics."),
     LayoutEnd;
 }
 
@@ -624,17 +709,21 @@ static BOOL open_bases(void)
     WindowBase   = OpenLibrary("window.class", 0);
     LayoutBase   = OpenLibrary("gadgets/layout.gadget", 0);
     ClickTabBase = OpenLibrary("gadgets/clicktab.gadget", 0);
+    StringBase   = OpenLibrary("gadgets/string.gadget", 0);
     LabelBase    = OpenLibrary("images/label.image", 0);
     ButtonBase   = OpenLibrary("gadgets/button.gadget", 0);
     ACNetworkBase = OpenLibrary(ACNETWORK_LIBRARY_NAME, ACNETWORK_LIBRARY_VERSION);
-    return CxBase && WindowBase && LayoutBase && ClickTabBase && LabelBase && ButtonBase;
+    SocketBase    = OpenLibrary("bsdsocket.library", 4);
+    return CxBase && WindowBase && LayoutBase && ClickTabBase && StringBase && LabelBase && ButtonBase;
 }
 
 static void close_bases(void)
 {
+    if (SocketBase) CloseLibrary(SocketBase);
     if (ACNetworkBase) CloseLibrary(ACNetworkBase);
     if (ButtonBase)   CloseLibrary(ButtonBase);
     if (LabelBase)    CloseLibrary(LabelBase);
+    if (StringBase)   CloseLibrary(StringBase);
     if (ClickTabBase) CloseLibrary(ClickTabBase);
     if (LayoutBase)   CloseLibrary(LayoutBase);
     if (WindowBase)   CloseLibrary(WindowBase);
@@ -771,6 +860,14 @@ int main(void)
                             case GID_GO_OFFLINE:
                                 set_soft_online(!(have_live_status &&
                                                   (live_status.state & ACNETWORK_STATE_ONLINE)));
+                                refresh_ui = TRUE;
+                                break;
+                            case GID_DIAG_DNS:
+                                run_dns_lookup();
+                                refresh_ui = TRUE;
+                                break;
+                            case GID_DIAG_CONNECT:
+                                run_tcp_test();
                                 refresh_ui = TRUE;
                                 break;
                             case GID_DIAG_COPY:
