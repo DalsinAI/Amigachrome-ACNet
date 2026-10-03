@@ -102,6 +102,12 @@
 #define ACHS_CMD_WIFI_FORGET      0x44   /* tx=known SSID\0 -> async ticket */
 #define ACHS_CMD_WIFI_ANSWER      0x45   /* a0=ticket -> result/rx, EINPROGRESS until done */
 #define ACHS_CMD_WIFI_CANCEL      0x46   /* a0=ticket; forget/cancel outstanding job */
+#define ACHS_CMD_PACKET_INFO      0x50   /* rx: ACPacketInfo */
+#define ACHS_CMD_PACKET_ONLINE    0x51   /* a0: flags; start user-mode Ethernet provider */
+#define ACHS_CMD_PACKET_OFFLINE   0x52   /* stop packet provider */
+#define ACHS_CMD_PACKET_SEND      0x53   /* tx: raw Ethernet frame -> bytes accepted */
+#define ACHS_CMD_PACKET_RECV      0x54   /* a0=max bytes -> frame, EAGAIN when empty */
+#define ACHS_CMD_PACKET_STATS     0x55   /* rx: ACPacketStats */
 
 /* POLL events (poll(2)'s values). */
 #define ACHS_POLLIN               0x0001

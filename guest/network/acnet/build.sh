@@ -21,7 +21,7 @@ BARE="-m68020 -O2 -include sys/types.h -fomit-frame-pointer -fno-toplevel-reorde
 INC="-I$GUEST/common/protocol -I$HERE/include -I$GUEST/network/acnetwork/include"
 COMPAT_INC="-I$STOVE/ndk/SANA+RoadshowTCP-IP/include"
 
-"$CC" $BARE $INC -o "$OUT/acnet.device" "$HERE/device/acnet_device.c" "$GUEST/common/os3/string.c" -lgcc
+"$CC" $BARE $INC $COMPAT_INC -o "$OUT/acnet.device" "$HERE/device/acnet_device.c" "$GUEST/common/os3/string.c" -lgcc
 echo "$OUT/acnet.device ($(wc -c < "$OUT/acnet.device") bytes)"
 
 STOVE="$STOVE" "$GUEST/network/acnetwork/build.sh" "$OUT"
@@ -54,6 +54,12 @@ if [ -f "$HERE/tests/modern_compat_probe.c" ]; then
     "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul \
         -o "$OUT/modern-compat-probe" "$HERE/tests/modern_compat_probe.c"
     echo "$OUT/modern-compat-probe ($(wc -c < "$OUT/modern-compat-probe") bytes)"
+fi
+
+if [ -f "$HERE/tests/sana2probe.c" ]; then
+    "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul $INC $COMPAT_INC \
+        -o "$OUT/sana2probe" "$HERE/tests/sana2probe.c"
+    echo "$OUT/sana2probe ($(wc -c < "$OUT/sana2probe") bytes)"
 fi
 
 if [ -f "$HERE/control/acnetcontrol.c" ]; then
