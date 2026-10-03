@@ -26,6 +26,35 @@ static struct servent *service(struct SocketBase *sb,STRPTR name,LONG port,STRPT
  UBYTE tx[128],rx[64];ULONG n=0,p=0,k=0;if(name){while(name[k]&&p<62)tx[p++]=name[k++];}tx[p++]=0;k=0;if(proto){while(proto[k]&&p<126)tx[p++]=proto[k++];}tx[p++]=0;
  LONG r=prov_call(sb,ACHS_CMD_SERVICE,(ULONG)port,sizeof(rx),0,0,tx,p,rx,sizeof(rx),&n);if(r<0)return NULL;scopy(sb->sname,(char*)rx,sizeof(sb->sname));scopy(sb->sproto,proto?(char*)proto:"",sizeof(sb->sproto));sb->sent.s_name=sb->sname;sb->sent.s_aliases=(STRPTR*)sb->hnull;sb->sent.s_port=(int)r;sb->sent.s_proto=sb->sproto;return &sb->sent;
 }
+
+static struct netent *network_lookup(struct SocketBase *sb, ULONG cmd, STRPTR name, in_addr_t net)
+{
+ UBYTE rx[96]; ULONG n=0,i=0; LONG r; const void *tx=NULL; ULONG txlen=0;
+ if(name){tx=name;txlen=slen((char*)name,63)+1;}
+ r=prov_call(sb,cmd,(ULONG)net,0,0,0,tx,txlen,rx,sizeof(rx),&n);
+ if(r<0){set_herrno(sb,(LONG)sb->last_err);return NULL;}
+ while(i<n&&rx[i])i++;
+ if(i>=n||i+5>n){set_herrno(sb,AH_NO_RECOVERY);return NULL;}
+ scopy(sb->nname,(char*)rx,sizeof(sb->nname));
+ sb->naliases[0]=NULL;
+ sb->nent.n_name=sb->nname;
+ sb->nent.n_aliases=(STRPTR*)sb->naliases;
+ sb->nent.n_addrtype=AF_INET;
+ CopyMem(rx+i+1,&sb->nent.n_net,4);
+ set_herrno(sb,0);
+ return &sb->nent;
+}
+struct netent *bsd_getnetbyname(struct SocketBase *sb,STRPTR name)
+{
+ if(!name){set_herrno(sb,AH_HOST_NOT_FOUND);return NULL;}
+ return network_lookup(sb,ACHS_CMD_NET_BY_NAME,name,0);
+}
+struct netent *bsd_getnetbyaddr(struct SocketBase *sb,in_addr_t net,LONG type)
+{
+ if(type!=AF_INET){set_herrno(sb,AH_NO_RECOVERY);return NULL;}
+ return network_lookup(sb,ACHS_CMD_NET_BY_ADDR,NULL,net);
+}
+
 struct servent *bsd_getservbyname(struct SocketBase *sb,STRPTR name,STRPTR proto){return service(sb,name,0,proto);}
 struct servent *bsd_getservbyport(struct SocketBase *sb,LONG port,STRPTR proto){return service(sb,NULL,port,proto);}
 
