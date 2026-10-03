@@ -248,15 +248,18 @@ Previously live-qualified on Instance-6:
 
 Complete-stack branch evidence on 3 October:
 
+- guest stack sealed at `f126774` (`feature/complete-stack-20261003`);
+- matching host/runtime and deployment payload sealed at `0ffaa7c` (`net/complete-stack-20261003`);
 - full OS3 cross-build: 46/46 core vectors, zero core stubs;
 - Roadshow compatibility tail: 27 implemented vectors after BPF/modern additions;
-- ACNet guest build and ACTCPTools build complete;
-- HostSocket BPF/Wi-Fi/packet tests: 35/35;
-- combined installer + hardware + HostSocket gate: 56/56;
-- transactional guest installer: 6/6;
+- ACNet guest build and all nine ACTCPTools binaries complete;
+- HostSocket complete-stack service tests: 35/35;
+- transactional guest installer tests: 6/6;
+- additional instance-hardware/host/deployment/network integration gate: 47/47;
+- production payload manifest: 21 entries verified by SHA-256, comprising 14 installed production files plus seven qualification probes;
 - real Roadshow AmigaOS libpcap 0.8.1 cross-build produced a 140 KiB m68k `libpcap.a`.
 
-The new complete-stack guest/host pair has not yet had its consolidated live Instance-6 campaign. Build/test success must not be reported as that live qualification.
+The sealed complete-stack guest/host pair has not yet had its consolidated live Instance-6 campaign. Build/test success must not be reported as that live qualification.
 ## 16. Deliberate non-APIs and remaining release gates
 
 The following are not required code gaps in the specified OS3 stack:
@@ -268,7 +271,7 @@ The following are not required code gaps in the specified OS3 stack:
 
 Remaining release work is integration and evidence:
 
-1. commit/merge the matching guest and host complete-stack branches;
+1. merge the sealed guest (`f126774`) and host/runtime (`0ffaa7c`) complete-stack branches through the normal review path;
 2. deploy matching HostSocket/runtime and guest payload together;
 3. run `modern-compat-probe`, `bpfprobe`, `sana2probe`, `acwifitest`, core BSD and ACTCPTools on the dedicated OS3 qualification guest;
 4. run the real-application matrix and broader bsdsock conformance;
