@@ -34,7 +34,10 @@
 #include <proto/label.h>
 #include <proto/window.h>
 #include <clib/alib_protos.h>
+#include <stdio.h>
 
+#include <acnetwork.h>
+#include <proto/acnetwork.h>
 #include "../include/acnet_device.h"
 
 /* Strong definitions stop libnix libstubs.a from supplying its own class
@@ -46,9 +49,11 @@ struct Library *ClickTabBase = NULL;
 struct Library *LabelBase = NULL;
 struct Library *LayoutBase = NULL;
 struct Library *WindowBase = NULL;
+struct Library *ACNetworkBase = NULL;
 
 enum {
     GID_TABS = 1,
+    GID_REFRESH,
     GID_GO_OFFLINE,
     GID_WIFI_RESCAN,
     GID_DIAG_DNS,
@@ -69,10 +74,35 @@ static struct List tabs;
 static struct MsgPort *dev_port;
 static struct IOStdReq *dev_req;
 static ULONG acnet_state;
+static struct ACNetworkStatus live_status;
+static BOOL have_live_status;
+static struct ACNetworkInterface live_interface;
+static BOOL have_live_interface;
+static struct ACNetworkRoute live_default_route;
+static BOOL have_live_route;
+static struct ACNetworkSocket live_sockets[6];
+static LONG live_socket_count;
+static UBYTE live_dns[4];
+static BOOL have_live_dns;
+static char live_hostname[64];
 
-static UBYTE status_network[64];
-static UBYTE status_card[96];
-static UBYTE status_bottom[96];
+static char status_network[64];
+static char status_card[96];
+static char status_bottom[96];
+static char status_hostname[80];
+static char status_ip[64];
+static char status_mask[64];
+static char status_gateway[64];
+static char status_dns[64];
+static char status_link[64];
+static char status_interface[64];
+static char status_sockets[64];
+static char status_in[64];
+static char status_out[64];
+static char status_connects[64];
+static char status_refused[64];
+static char status_toggle[32];
+static char conn_lines[6][96];
 
 static ULONG acn_state_call(struct Device *dev)
 {
@@ -111,21 +141,182 @@ static void close_acnet_state(void)
     }
 }
 
+static void ip4_text(const UBYTE a[4], char *out)
+{
+    sprintf(out, "%u.%u.%u.%u",
+            (unsigned)a[0], (unsigned)a[1], (unsigned)a[2], (unsigned)a[3]);
+}
+
+static BOOL ip4_is_zero(const UBYTE a[4])
+{
+    return a[0] == 0 && a[1] == 0 && a[2] == 0 && a[3] == 0;
+}
+
+static LONG ac_call(ULONG command, ULONG arg0, APTR rx, ULONG rxmax, ULONG *rxlen)
+{
+    struct ACNetworkRequest r;
+    LONG result;
+    if (!ACNetworkBase) return -1;
+    memset(&r, 0, sizeof(r));
+    r.command = command;
+    r.arg[0] = arg0;
+    r.rx = (UBYTE *)rx;
+    r.rxmax = rxmax;
+    result = ACNetwork_Call(&r);
+    if (rxlen) *rxlen = r.rxlen;
+    return result;
+}
+
+static void read_live_data(void)
+{
+    struct ACNetworkInterface ifs[16];
+    struct ACNetworkRoute routes[32];
+    UBYTE dns[16];
+    LONG n, i;
+    ULONG rxlen = 0;
+
+    have_live_status = have_live_interface = have_live_route = have_live_dns = FALSE;
+    live_socket_count = 0;
+    memset(&live_status, 0, sizeof(live_status));
+    memset(&live_interface, 0, sizeof(live_interface));
+    memset(&live_default_route, 0, sizeof(live_default_route));
+    memset(live_dns, 0, sizeof(live_dns));
+    live_hostname[0] = 0;
+
+    if (!ACNetworkBase) return;
+
+    if (ac_call(ACNETWORK_CMD_STATUS, 0, &live_status, sizeof(live_status), &rxlen) >= 0 &&
+        rxlen >= sizeof(live_status))
+        have_live_status = TRUE;
+
+    rxlen = 0;
+    if (ac_call(ACNETWORK_CMD_HOSTNAME, 0, live_hostname, sizeof(live_hostname) - 1, &rxlen) >= 0) {
+        ULONG end = rxlen < sizeof(live_hostname) ? rxlen : sizeof(live_hostname) - 1;
+        live_hostname[end] = 0;
+    }
+
+    n = ac_call(ACNETWORK_CMD_INTERFACES, 16, ifs, sizeof(ifs), NULL);
+    if (n > 0) {
+        live_interface = ifs[0];
+        have_live_interface = TRUE;
+        for (i = 0; i < n; ++i) {
+            if (!ip4_is_zero(ifs[i].ipv4) && ifs[i].ipv4[0] != 127) {
+                live_interface = ifs[i];
+                break;
+            }
+        }
+    }
+
+    n = ac_call(ACNETWORK_CMD_ROUTES, 32, routes, sizeof(routes), NULL);
+    for (i = 0; i < n; ++i) {
+        if (ip4_is_zero(routes[i].destination) && ip4_is_zero(routes[i].netmask)) {
+            live_default_route = routes[i];
+            have_live_route = TRUE;
+            break;
+        }
+    }
+
+    n = ac_call(ACNETWORK_CMD_DNS_SERVERS, 4, dns, sizeof(dns), NULL);
+    if (n > 0) {
+        CopyMem(dns, live_dns, 4);
+        have_live_dns = TRUE;
+    }
+
+    n = ac_call(ACNETWORK_CMD_SOCKETS, 6, live_sockets, sizeof(live_sockets), NULL);
+    if (n > 0) live_socket_count = n > 6 ? 6 : n;
+}
+
+static const char *socket_state_name(ULONG state)
+{
+    switch (state) {
+        case ACNETWORK_SOCKET_BOUND: return "BOUND";
+        case ACNETWORK_SOCKET_LISTEN: return "LISTEN";
+        case ACNETWORK_SOCKET_CONNECTED: return "ESTABLISHED";
+        default: return "OPEN";
+    }
+}
+
+static void make_connection_strings(void)
+{
+    LONG i;
+    for (i = 0; i < 6; ++i) strcpy(conn_lines[i], i == 0 ? "No open sockets." : "");
+    for (i = 0; i < live_socket_count && i < 6; ++i) {
+        char lip[24], rip[24];
+        const char *proto = live_sockets[i].protocol == 6 ? "TCP" :
+                            (live_sockets[i].protocol == 17 ? "UDP" : "RAW");
+        ip4_text(live_sockets[i].local_ipv4, lip);
+        ip4_text(live_sockets[i].remote_ipv4, rip);
+        sprintf(conn_lines[i], "%s %s:%u -> %s:%u  %s",
+                proto, lip, (unsigned)live_sockets[i].local_port,
+                rip, (unsigned)live_sockets[i].remote_port,
+                socket_state_name(live_sockets[i].state));
+    }
+}
+
 static void make_status_strings(void)
 {
-    if (!(acnet_state & ACN_STATE_CARD)) {
+    ULONG state = have_live_status ? live_status.state : acnet_state;
+    char ip[24], mask[24], gateway[24], dns[24];
+
+    if (!(state & ACNETWORK_STATE_CARD)) {
         strcpy(status_network, "Network       No ACNet card");
         strcpy(status_card,    "Card          Not present");
         strcpy(status_bottom,  "No ACNet card - enable Network in Cradle and reboot");
-    } else if (!(acnet_state & ACN_STATE_ONLINE)) {
-        strcpy(status_network, "Network       Off in Cradle");
+    } else if (!(state & ACNETWORK_STATE_ONLINE)) {
+        strcpy(status_network, "Network       Offline");
         strcpy(status_card,    "Card          ACNet - Dalsin product 6 - HostSocket");
-        strcpy(status_bottom,  "Network is disabled in Cradle");
+        strcpy(status_bottom,  "ACNet is offline - use Go online or enable Network in Cradle");
     } else {
         strcpy(status_network, "Network       Online");
         strcpy(status_card,    "Card          ACNet - Dalsin product 6 - HostSocket");
-        strcpy(status_bottom,  "Online - ACNet card present");
+        strcpy(status_bottom,  "Live ACNet status - Refresh updates counters and connections");
     }
+
+    sprintf(status_hostname, "Hostname      %s", live_hostname[0] ? live_hostname : "(unavailable)");
+    if (have_live_interface) {
+        ip4_text(live_interface.ipv4, ip);
+        ip4_text(live_interface.netmask, mask);
+        sprintf(status_ip, "IP Address    %s", ip);
+        sprintf(status_mask, "Subnet Mask   %s", mask);
+        sprintf(status_interface, "Interface     %s", live_interface.ifname);
+    } else {
+        strcpy(status_ip, "IP Address    unavailable");
+        strcpy(status_mask, "Subnet Mask   unavailable");
+        strcpy(status_interface, "Interface     unavailable");
+    }
+
+    if (have_live_route) {
+        ip4_text(live_default_route.gateway, gateway);
+        sprintf(status_gateway, "Gateway       %s", gateway);
+    } else {
+        strcpy(status_gateway, "Gateway       unavailable");
+    }
+
+    if (have_live_dns) {
+        ip4_text(live_dns, dns);
+        sprintf(status_dns, "DNS Server    %s", dns);
+    } else {
+        strcpy(status_dns, "DNS Server    unavailable");
+    }
+
+    if (have_live_status) {
+        sprintf(status_link, "Host link     %u Mb/s", (unsigned)live_status.link_mbps);
+        sprintf(status_sockets, "Open Sockets  %u", (unsigned)live_status.sockets);
+        sprintf(status_in, "Total In      %llu bytes", (unsigned long long)live_status.bytes_in);
+        sprintf(status_out, "Total Out     %llu bytes", (unsigned long long)live_status.bytes_out);
+        sprintf(status_connects, "Connects      %u", (unsigned)live_status.connects);
+        sprintf(status_refused, "Refused       %u", (unsigned)live_status.refused);
+    } else {
+        strcpy(status_link, "Host link     unavailable");
+        strcpy(status_sockets, "Open Sockets  unavailable");
+        strcpy(status_in, "Total In      unavailable");
+        strcpy(status_out, "Total Out     unavailable");
+        strcpy(status_connects, "Connects      unavailable");
+        strcpy(status_refused, "Refused       unavailable");
+    }
+
+    strcpy(status_toggle, (state & ACNETWORK_STATE_ONLINE) ? "Go offline" : "Go online");
+    make_connection_strings();
 }
 
 static BOOL make_tabs(void)
@@ -170,34 +361,39 @@ static Object *status_page(void)
             LINE(status_network),
             LINE(status_card),
             LINE("Library       bsdsocket.library 4.x (ACNet)"),
-            LINE("This Amiga    instance / acnet0"),
-            LINE("IP Address    telemetry pending"),
-            LINE("Subnet Mask   telemetry pending"),
-            LINE("Gateway       telemetry pending"),
-            LINE("DNS Servers   telemetry pending"),
-            LINE("Uptime        telemetry pending"),
-            LAYOUT_AddChild, ButtonObject,
-                GA_ID, GID_GO_OFFLINE,
-                GA_Text, "Go offline...",
-                GA_RelVerify, TRUE,
-                GA_Disabled, TRUE,
-            ButtonEnd,
+            LINE(status_hostname),
+            LINE(status_ip),
+            LINE(status_mask),
+            LINE(status_gateway),
+            LINE(status_dns),
+            LAYOUT_AddChild, HGroupObject,
+                LAYOUT_AddChild, ButtonObject,
+                    GA_ID, GID_REFRESH,
+                    GA_Text, "Refresh",
+                    GA_RelVerify, TRUE,
+                ButtonEnd,
+                LAYOUT_AddChild, ButtonObject,
+                    GA_ID, GID_GO_OFFLINE,
+                    GA_Text, status_toggle,
+                    GA_RelVerify, TRUE,
+                    GA_Disabled, ACNetworkBase ? FALSE : TRUE,
+                ButtonEnd,
+            LayoutEnd,
             CHILD_WeightedHeight, 0,
         LayoutEnd,
 
         LAYOUT_AddChild, VGroupObject,
             LAYOUT_BevelStyle, BVS_GROUP,
             LAYOUT_Label, "Traffic / Host (PC)",
-            LINE("Download      telemetry pending"),
-            LINE("Upload        telemetry pending"),
-            LINE("Total In      telemetry pending"),
-            LINE("Total Out     telemetry pending"),
-            LINE("Open Sockets  telemetry pending"),
+            LINE(status_link),
+            LINE(status_interface),
+            LINE(status_sockets),
+            LINE(status_in),
+            LINE(status_out),
+            LINE(status_connects),
+            LINE(status_refused),
             LINE(""),
-            LINE("PC Address    telemetry pending"),
-            LINE("Interface     telemetry pending"),
-            LINE("Gateway       telemetry pending"),
-            LINE("Public Addr   Diagnostics only"),
+            LINE("Counters are per ACNet runtime session."),
         LayoutEnd,
     LayoutEnd;
 }
@@ -233,11 +429,15 @@ static Object *connections_page(void)
         LAYOUT_SpaceOuter, TRUE,
         LAYOUT_BevelStyle, BVS_GROUP,
         LAYOUT_Label, "Connections",
-        LINE("Open sockets on this Amiga"),
-        LINE("Program       Protocol   Local          Remote         State"),
-        LINE("-------------------------------------------------------------"),
-        LINE("Connection inventory pending ACNet private tags."),
-        LINE("Version 1 is read-only."),
+        LINE("Open sockets owned by this ACNet instance"),
+        LINE("Protocol / local -> remote / state"),
+        LINE(conn_lines[0]),
+        LINE(conn_lines[1]),
+        LINE(conn_lines[2]),
+        LINE(conn_lines[3]),
+        LINE(conn_lines[4]),
+        LINE(conn_lines[5]),
+        LINE("Read-only. Use netstat for the complete list."),
     LayoutEnd;
 }
 
@@ -252,21 +452,25 @@ static Object *diagnostics_page(void)
             GA_ID, GID_DIAG_DNS,
             GA_Text, "Look up a name...",
             GA_RelVerify, TRUE,
+            GA_Disabled, TRUE,
         ButtonEnd,
         LAYOUT_AddChild, ButtonObject,
             GA_ID, GID_DIAG_CONNECT,
             GA_Text, "Test a connection...",
             GA_RelVerify, TRUE,
+            GA_Disabled, TRUE,
         ButtonEnd,
         LAYOUT_AddChild, ButtonObject,
             GA_ID, GID_DIAG_INTERNET,
             GA_Text, "Check the internet...",
             GA_RelVerify, TRUE,
+            GA_Disabled, TRUE,
         ButtonEnd,
         LAYOUT_AddChild, ButtonObject,
             GA_ID, GID_DIAG_COPY,
-            GA_Text, "Copy report",
+            GA_Text, "Save report to RAM:",
             GA_RelVerify, TRUE,
+            GA_Disabled, ACNetworkBase ? FALSE : TRUE,
         ButtonEnd,
     LayoutEnd;
 }
@@ -362,6 +566,58 @@ static void show_window(void)
     }
 }
 
+static BOOL set_soft_online(BOOL online)
+{
+    struct ACNetworkRequest r;
+    if (!ACNetworkBase) return FALSE;
+    memset(&r, 0, sizeof(r));
+    r.command = ACNETWORK_CMD_SET_ONLINE;
+    r.arg[0] = online ? 1 : 0;
+    return ACNetwork_Call(&r) >= 0;
+}
+
+static void save_report(void)
+{
+    BPTR fh;
+    LONG i;
+    fh = Open("RAM:ACNetReport.txt", MODE_NEWFILE);
+    if (!fh) return;
+    FPuts(fh, "ACNetControl report\n");
+    FPuts(fh, status_network); FPuts(fh, "\n");
+    FPuts(fh, status_card); FPuts(fh, "\n");
+    FPuts(fh, status_hostname); FPuts(fh, "\n");
+    FPuts(fh, status_ip); FPuts(fh, "\n");
+    FPuts(fh, status_mask); FPuts(fh, "\n");
+    FPuts(fh, status_gateway); FPuts(fh, "\n");
+    FPuts(fh, status_dns); FPuts(fh, "\n");
+    FPuts(fh, status_link); FPuts(fh, "\n");
+    FPuts(fh, status_interface); FPuts(fh, "\n");
+    FPuts(fh, status_sockets); FPuts(fh, "\n");
+    FPuts(fh, status_in); FPuts(fh, "\n");
+    FPuts(fh, status_out); FPuts(fh, "\n");
+    FPuts(fh, status_connects); FPuts(fh, "\n");
+    FPuts(fh, status_refused); FPuts(fh, "\n\nConnections:\n");
+    for (i = 0; i < 6; ++i) {
+        if (conn_lines[i][0]) { FPuts(fh, conn_lines[i]); FPuts(fh, "\n"); }
+    }
+    Close(fh);
+}
+
+static BOOL rebuild_window(void)
+{
+    BOOL reopen = window != NULL;
+    hide_window();
+    if (win_obj) {
+        DisposeObject(win_obj);
+        win_obj = NULL;
+    }
+    read_live_data();
+    make_status_strings();
+    if (!create_window_object()) return FALSE;
+    if (reopen) show_window();
+    return TRUE;
+}
+
 static BOOL open_bases(void)
 {
     CxBase       = OpenLibrary("commodities.library", 37);
@@ -370,11 +626,13 @@ static BOOL open_bases(void)
     ClickTabBase = OpenLibrary("gadgets/clicktab.gadget", 0);
     LabelBase    = OpenLibrary("images/label.image", 0);
     ButtonBase   = OpenLibrary("gadgets/button.gadget", 0);
+    ACNetworkBase = OpenLibrary(ACNETWORK_LIBRARY_NAME, ACNETWORK_LIBRARY_VERSION);
     return CxBase && WindowBase && LayoutBase && ClickTabBase && LabelBase && ButtonBase;
 }
 
 static void close_bases(void)
 {
+    if (ACNetworkBase) CloseLibrary(ACNetworkBase);
     if (ButtonBase)   CloseLibrary(ButtonBase);
     if (LabelBase)    CloseLibrary(LabelBase);
     if (ClickTabBase) CloseLibrary(ClickTabBase);
@@ -474,6 +732,7 @@ int main(void)
     }
 
     read_acnet_state();
+    read_live_data();
     make_status_strings();
 
     if (!make_tabs() || !create_window_object() || !create_broker()) {
@@ -498,17 +757,30 @@ int main(void)
 
         if (running && window && (sigs & winsig)) {
             ULONG result;
+            BOOL refresh_ui = FALSE;
             while ((result = RA_HandleInput(win_obj, &code)) != WMHI_LASTMSG) {
                 switch (result & WMHI_CLASSMASK) {
                     case WMHI_CLOSEWINDOW:
                         hide_window();
                         break;
                     case WMHI_GADGETUP:
-                        /* The first-light UI has real controls only where
-                         * their backends already exist. */
+                        switch (result & WMHI_GADGETMASK) {
+                            case GID_REFRESH:
+                                refresh_ui = TRUE;
+                                break;
+                            case GID_GO_OFFLINE:
+                                set_soft_online(!(have_live_status &&
+                                                  (live_status.state & ACNETWORK_STATE_ONLINE)));
+                                refresh_ui = TRUE;
+                                break;
+                            case GID_DIAG_COPY:
+                                save_report();
+                                break;
+                        }
                         break;
                 }
             }
+            if (refresh_ui && !rebuild_window()) running = FALSE;
         }
     }
 

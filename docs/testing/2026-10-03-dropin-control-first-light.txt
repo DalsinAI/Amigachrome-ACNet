@@ -1,0 +1,62 @@
+ACNet drop-in state/tools/control first-light
+
+Date: 2026-10-03
+Guest: Instance-6 (AmigaOS 3.2.3 ACNet qualification guest)
+
+Native state/control API added:
+- ACNETWORK_CMD_INTERFACES
+- ACNETWORK_CMD_ROUTES
+- ACNETWORK_CMD_SOCKETS
+- ACNETWORK_CMD_SET_ONLINE
+- ACNETWORK_CMD_DNS_SERVERS
+
+Host qualification:
+- HostSocket focused suite: 28 tests run, 28 pass, 2 expected skips
+- fixed-size wire records: status 40, interface 64, route 40, socket 48 bytes
+- soft online/offline remains subordinate to the Cradle Network switch
+
+OS3 command first-light:
+- ifconfig: RC=0; live IPv4/interface/MTU/MAC/link/RX/TX data
+- route: RC=0; live default and LAN routes
+- netstat: RC=0; live ACNet state/counters/socket inventory
+
+Corrected live command output:
+- ifconfig listed lo and eno1 with IPv4/netmask/MAC/MTU/link and RX/TX bytes.
+- route listed the default route via 192.168.0.1 and the 192.168.0.0/24 connected route.
+- netstat reported ACNet online, 1000 Mb/s link, live counters and this-instance socket inventory.
+
+ACNetControl:
+- warning-free stock OS 3.2.3 build: 15,868 bytes.
+- Run returned RC=0.
+- AmigaDOS Status showed Process 2 loaded as C:ACNetControl after startup.
+- Status/Connections now consume the native acnetwork.library views.
+- Refresh and soft Go online/offline handlers are real.
+- Save report writes RAM:ACNetReport.txt.
+- diagnostics without backends are disabled rather than pretending to work.
+
+Shared control-path qualification with acnetctl:
+- status: RC=0, reported online.
+- offline: RC=0, reported offline.
+- ping while soft-offline: RC=1 as expected.
+- online: RC=0, reported online.
+- ping 127.0.0.1 after online: RC=0, 1/1 replies, 0% loss, about 0.307 ms.
+
+Note: no remote GUI-driving hook was available, so the ReAction buttons themselves were not clicked
+by the automated qualification. Their exact ACNETWORK_CMD_SET_ONLINE backend was qualified through
+the native acnetctl client on the same guest/library/HostSocket path.
+
+Guest hygiene:
+- Instance-6 User-Startup was backed up before the live gates and restored afterward.
+- restored User-Startup SHA-256: 37876fc06a77d8b49199a608ff73749bb2e81ae65520d9df5235439c90c3ae4d.
+- bsdsocket.library, acnetwork.library and acnet.device were not changed by the drop-in command tests.
+- their post-test hashes matched the pre-test values.
+- temporary ifconfig/route/netstat/acnetctl/ACNetControl test binaries were removed.
+- temporary drop-in qualification output files were removed.
+- Instance-6 host/runtime ports 8798 and 18798 were down after shutdown.
+- no general-purpose AmigaChrome instance was modified.
+
+Final build gate:
+- ACNet guest stack: warning-free.
+- ACNetControl: 15,868-byte AmigaOS LoadSeg binary.
+- ACTCPTools: nine warning-free AmigaOS LoadSeg binaries.
+- HostSocket focused tests: 28 run, OK, skipped=2.
