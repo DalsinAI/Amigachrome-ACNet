@@ -112,6 +112,8 @@ static char status_connects[64];
 static char status_refused[64];
 static char status_toggle[32];
 static char conn_lines[6][96];
+static char log_lines[6][96] = { "No ACNet events yet.", "", "", "", "", "" };
+static ULONG live_log_seq;
 static Object *diag_name_obj;
 static Object *diag_host_obj;
 static Object *diag_port_obj;
@@ -168,7 +170,7 @@ static BOOL ip4_is_zero(const UBYTE a[4])
     return a[0] == 0 && a[1] == 0 && a[2] == 0 && a[3] == 0;
 }
 
-static LONG ac_call(ULONG command, ULONG arg0, APTR rx, ULONG rxmax, ULONG *rxlen)
+static LONG ac_call2(ULONG command, ULONG arg0, ULONG arg1, APTR rx, ULONG rxmax, ULONG *rxlen)
 {
     struct ACNetworkRequest r;
     LONG result;
@@ -176,11 +178,42 @@ static LONG ac_call(ULONG command, ULONG arg0, APTR rx, ULONG rxmax, ULONG *rxle
     memset(&r, 0, sizeof(r));
     r.command = command;
     r.arg[0] = arg0;
+    r.arg[1] = arg1;
     r.rx = (UBYTE *)rx;
     r.rxmax = rxmax;
     result = ACNetwork_Call(&r);
     if (rxlen) *rxlen = r.rxlen;
     return result;
+}
+
+static LONG ac_call(ULONG command, ULONG arg0, APTR rx, ULONG rxmax, ULONG *rxlen)
+{
+    return ac_call2(command, arg0, 0, rx, rxmax, rxlen);
+}
+
+static void push_log_line(const struct ACNetworkLogEntry *entry)
+{
+    LONG i;
+    const char *level = entry->level == ACNETWORK_LOG_ERROR ? "ERR" :
+                        entry->level == ACNETWORK_LOG_WARN ? "WARN" : "INFO";
+    if (live_log_seq == 0 && !strcmp(log_lines[0], "No ACNet events yet."))
+        for (i = 0; i < 6; ++i) log_lines[i][0] = 0;
+    for (i = 0; i < 5; ++i) strcpy(log_lines[i], log_lines[i + 1]);
+    sprintf(log_lines[5], "%lu %-4s %s", (unsigned long)entry->sequence, level, entry->text);
+    live_log_seq = entry->sequence;
+}
+
+static void read_live_log(void)
+{
+    struct ACNetworkLogEntry rows[32];
+    ULONG rxlen = 0;
+    LONG n, i, count;
+    if (!ACNetworkBase) return;
+    n = ac_call2(ACNETWORK_CMD_LOG, live_log_seq, 32, rows, sizeof(rows), &rxlen);
+    if (n <= 0) return;
+    count = n;
+    if ((ULONG)count > rxlen / sizeof(rows[0])) count = rxlen / sizeof(rows[0]);
+    for (i = 0; i < count; ++i) push_log_line(&rows[i]);
 }
 
 static void read_live_data(void)
@@ -240,6 +273,8 @@ static void read_live_data(void)
 
     n = ac_call(ACNETWORK_CMD_SOCKETS, 6, live_sockets, sizeof(live_sockets), NULL);
     if (n > 0) live_socket_count = n > 6 ? 6 : n;
+
+    read_live_log();
 }
 
 static const char *socket_state_name(ULONG state)
@@ -580,9 +615,30 @@ static Object *log_page(void)
         LAYOUT_SpaceOuter, TRUE,
         LAYOUT_BevelStyle, BVS_GROUP,
         LAYOUT_Label, "ACNet Event Log",
-        LINE("The event ring backend is not fitted in this build yet."),
-        LINE("Current counters and connection state are live on Status/Connections."),
-        LINE("Support snapshots can be written from Diagnostics."),
+        LINE(log_lines[0]),
+        LINE(log_lines[1]),
+        LINE(log_lines[2]),
+        LINE(log_lines[3]),
+        LINE(log_lines[4]),
+        LINE(log_lines[5]),
+        LAYOUT_AddChild, HGroupObject,
+            LAYOUT_AddChild, ButtonObject,
+                GA_ID, GID_REFRESH,
+                GA_Text, "Refresh",
+                GA_RelVerify, TRUE,
+            ButtonEnd,
+            LAYOUT_AddChild, ButtonObject,
+                GA_ID, GID_LOG_CLEAR,
+                GA_Text, "Clear view",
+                GA_RelVerify, TRUE,
+            ButtonEnd,
+            LAYOUT_AddChild, ButtonObject,
+                GA_ID, GID_LOG_SAVE,
+                GA_Text, "Save RAM:ACNetLog.txt",
+                GA_RelVerify, TRUE,
+            ButtonEnd,
+        LayoutEnd,
+        CHILD_WeightedHeight, 0,
     LayoutEnd;
 }
 
@@ -685,7 +741,31 @@ static void save_report(void)
     for (i = 0; i < 6; ++i) {
         if (conn_lines[i][0]) { FPuts(fh, conn_lines[i]); FPuts(fh, "\n"); }
     }
+    FPuts(fh, "\nEvent log:\n");
+    for (i = 0; i < 6; ++i) {
+        if (log_lines[i][0]) { FPuts(fh, log_lines[i]); FPuts(fh, "\n"); }
+    }
     Close(fh);
+}
+
+static void save_log(void)
+{
+    BPTR fh;
+    LONG i;
+    fh = Open("RAM:ACNetLog.txt", MODE_NEWFILE);
+    if (!fh) return;
+    FPuts(fh, "ACNet event log view\n");
+    for (i = 0; i < 6; ++i) {
+        if (log_lines[i][0]) { FPuts(fh, log_lines[i]); FPuts(fh, "\n"); }
+    }
+    Close(fh);
+}
+
+static void clear_log_view(void)
+{
+    LONG i;
+    for (i = 0; i < 6; ++i) log_lines[i][0] = 0;
+    strcpy(log_lines[0], "Log view cleared. New events will appear here.");
 }
 
 static BOOL rebuild_window(void)
@@ -872,6 +952,13 @@ int main(void)
                                 break;
                             case GID_DIAG_COPY:
                                 save_report();
+                                break;
+                            case GID_LOG_CLEAR:
+                                clear_log_view();
+                                refresh_ui = TRUE;
+                                break;
+                            case GID_LOG_SAVE:
+                                save_log();
                                 break;
                         }
                         break;
