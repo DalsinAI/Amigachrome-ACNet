@@ -3,18 +3,15 @@
  *
  * First-light UI: native five-page control/status application.  Network
  * operation does not depend on this program; closing the window merely hides
- * the Commodity.
+ * the Commodity. The pages, the broker and the card's state come from
+ * acnetcontrol_core.c, shared with the GadTools front end.
  *
  * BSD-3-Clause.
  */
 #include <exec/types.h>
-#include <exec/io.h>
 #include <exec/libraries.h>
-#include <exec/ports.h>
 #include <dos/dos.h>
-#include <string.h>
 #include <intuition/intuition.h>
-#include <libraries/commodities.h>
 #include <reaction/reaction.h>
 #include <reaction/reaction_macros.h>
 #include <gadgets/button.h>
@@ -27,7 +24,6 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
-#include <proto/commodities.h>
 #include <proto/button.h>
 #include <proto/clicktab.h>
 #include <proto/layout.h>
@@ -35,108 +31,27 @@
 #include <proto/window.h>
 #include <clib/alib_protos.h>
 
-#include "../include/acnet_device.h"
+#include "acnetcontrol_core.h"
 
-struct Library *CxBase;
 struct Library *ButtonBase;
 struct Library *ClickTabBase;
 struct Library *LabelBase;
 struct Library *LayoutBase;
 struct Library *WindowBase;
 
-enum {
-    GID_TABS = 1,
-    GID_GO_OFFLINE,
-    GID_WIFI_RESCAN,
-    GID_DIAG_DNS,
-    GID_DIAG_CONNECT,
-    GID_DIAG_INTERNET,
-    GID_DIAG_COPY,
-    GID_LOG_CLEAR,
-    GID_LOG_SAVE
-};
-
-#define HOTKEY_ID 0xAC01
-
-static struct MsgPort *cx_port;
-static CxObj *broker;
 static Object *win_obj;
 static struct Window *window;
 static struct List tabs;
-static struct MsgPort *dev_port;
-static struct IOStdReq *dev_req;
-static ULONG acnet_state;
-
-static UBYTE status_network[64];
-static UBYTE status_card[96];
-static UBYTE status_bottom[96];
-
-static ULONG acn_state_call(struct Device *dev)
-{
-    register struct Device *a6 __asm("a6") = dev;
-    register ULONG d0 __asm("d0");
-    __asm volatile ("jsr -60(a6)"
-                    : "=r"(d0)
-                    : "r"(a6)
-                    : "d1", "a0", "a1", "cc", "memory");
-    return d0;
-}
-
-static void read_acnet_state(void)
-{
-    acnet_state = 0;
-    dev_port = CreateMsgPort();
-    if (!dev_port) return;
-    dev_req = (struct IOStdReq *)CreateIORequest(dev_port, sizeof(*dev_req));
-    if (!dev_req) return;
-
-    if (OpenDevice(ACNET_DEVICE_NAME, 0, (struct IORequest *)dev_req, 0) == 0) {
-        acnet_state = acn_state_call(dev_req->io_Device);
-    }
-}
-
-static void close_acnet_state(void)
-{
-    if (dev_req) {
-        if (dev_req->io_Device) CloseDevice((struct IORequest *)dev_req);
-        DeleteIORequest((struct IORequest *)dev_req);
-        dev_req = NULL;
-    }
-    if (dev_port) {
-        DeleteMsgPort(dev_port);
-        dev_port = NULL;
-    }
-}
-
-static void make_status_strings(void)
-{
-    if (!(acnet_state & ACN_STATE_CARD)) {
-        strcpy(status_network, "Network       No ACNet card");
-        strcpy(status_card,    "Card          Not present");
-        strcpy(status_bottom,  "No ACNet card - enable Network in Cradle and reboot");
-    } else if (!(acnet_state & ACN_STATE_ONLINE)) {
-        strcpy(status_network, "Network       Off in Cradle");
-        strcpy(status_card,    "Card          ACNet - Dalsin product 6 - HostSocket");
-        strcpy(status_bottom,  "Network is disabled in Cradle");
-    } else {
-        strcpy(status_network, "Network       Online");
-        strcpy(status_card,    "Card          ACNet - Dalsin product 6 - HostSocket");
-        strcpy(status_bottom,  "Online - ACNet card present");
-    }
-}
 
 static BOOL make_tabs(void)
 {
-    static STRPTR names[] = {
-        "Status", "Wi-Fi", "Connections", "Diagnostics", "Log", NULL
-    };
     struct Node *node;
     LONG i;
 
     NewList(&tabs);
-    for (i = 0; names[i]; ++i) {
+    for (i = 0; i < ACNC_PAGES; ++i) {
         node = (struct Node *)AllocClickTabNode(
-            TNA_Text, names[i],
+            TNA_Text, acnc_page[i].name,
             TNA_Number, i,
             TNA_Enabled, TRUE,
             TNA_Spacing, 6,
@@ -153,150 +68,59 @@ static void free_tabs(void)
     while ((node = RemHead(&tabs)) != NULL) FreeClickTabNode(node);
 }
 
-#define LINE(txt)     LAYOUT_AddImage, LabelObject, LABEL_Text, (ULONG)(txt), LabelEnd,     CHILD_WeightedHeight, 0
-
-static Object *status_page(void)
+static Object *button(const ACNCButton *b)
 {
-    return HGroupObject,
-        LAYOUT_SpaceOuter, TRUE,
-        LAYOUT_SpaceInner, TRUE,
-
-        LAYOUT_AddChild, VGroupObject,
-            LAYOUT_BevelStyle, BVS_GROUP,
-            LAYOUT_Label, "Network Status",
-            LINE(status_network),
-            LINE(status_card),
-            LINE("Library       bsdsocket.library 4.x (ACNet)"),
-            LINE("This Amiga    instance / acnet0"),
-            LINE("IP Address    telemetry pending"),
-            LINE("Subnet Mask   telemetry pending"),
-            LINE("Gateway       telemetry pending"),
-            LINE("DNS Servers   telemetry pending"),
-            LINE("Uptime        telemetry pending"),
-            LAYOUT_AddChild, ButtonObject,
-                GA_ID, GID_GO_OFFLINE,
-                GA_Text, "Go offline...",
-                GA_RelVerify, TRUE,
-                GA_Disabled, TRUE,
-            ButtonEnd,
-            CHILD_WeightedHeight, 0,
-        LayoutEnd,
-
-        LAYOUT_AddChild, VGroupObject,
-            LAYOUT_BevelStyle, BVS_GROUP,
-            LAYOUT_Label, "Traffic / Host (PC)",
-            LINE("Download      telemetry pending"),
-            LINE("Upload        telemetry pending"),
-            LINE("Total In      telemetry pending"),
-            LINE("Total Out     telemetry pending"),
-            LINE("Open Sockets  telemetry pending"),
-            LINE(""),
-            LINE("PC Address    telemetry pending"),
-            LINE("Interface     telemetry pending"),
-            LINE("Gateway       telemetry pending"),
-            LINE("Public Addr   Diagnostics only"),
-        LayoutEnd,
-    LayoutEnd;
+    return NewObject(BUTTON_GetClass(), NULL, GA_ID, b->id, GA_Text, (ULONG)b->label,
+                     GA_RelVerify, TRUE, GA_Disabled, b->disabled, TAG_DONE);
 }
 
-static Object *wifi_page(void)
+/* One bevelled group: its lines as labels, then its buttons. */
+static Object *group_object(const ACNCGroup *g, BOOL outer_space)
 {
-    return VGroupObject,
-        LAYOUT_SpaceOuter, TRUE,
-        LAYOUT_BevelStyle, BVS_GROUP,
-        LAYOUT_Label, "Wi-Fi",
-        LINE("Host Wi-Fi control permission is reported by Cradle."),
-        LINE("Version 1 joins only networks already known by the PC."),
-        LINE("Passphrases never pass through the Amiga."),
-        LINE(""),
-        LINE("Current link  telemetry pending"),
-        LINE("SSID          telemetry pending"),
-        LINE("Signal        telemetry pending"),
-        LINE("Security      telemetry pending"),
-        LINE("Link rate     telemetry pending"),
-        LAYOUT_AddChild, ButtonObject,
-            GA_ID, GID_WIFI_RESCAN,
-            GA_Text, "Rescan",
-            GA_RelVerify, TRUE,
-            GA_Disabled, TRUE,
-        ButtonEnd,
-        CHILD_WeightedHeight, 0,
-    LayoutEnd;
+    Object *grp = NewObject(LAYOUT_GetClass(), NULL, LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                            LAYOUT_SpaceOuter, outer_space, LAYOUT_BevelStyle, BVS_GROUP,
+                            LAYOUT_Label, (ULONG)g->title, TAG_DONE);
+    Object *row = NULL;
+    int i;
+
+    if (!grp) return NULL;
+    for (i = 0; i < ACNC_MAX_LINES && g->line[i]; ++i)
+        SetAttrs(grp, LAYOUT_AddImage, (ULONG)NewObject(LABEL_GetClass(), NULL, LABEL_Text, (ULONG)g->line[i], TAG_DONE),
+                 CHILD_WeightedHeight, 0, TAG_DONE);
+    if (g->buttons_in_a_row && g->button[0].id)
+        row = NewObject(LAYOUT_GetClass(), NULL, LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ, TAG_DONE);
+    for (i = 0; i < ACNC_MAX_BUTTONS && g->button[i].id; ++i) {
+        if (row)
+            SetAttrs(row, LAYOUT_AddChild, (ULONG)button(&g->button[i]), TAG_DONE);
+        else
+            SetAttrs(grp, LAYOUT_AddChild, (ULONG)button(&g->button[i]), CHILD_WeightedHeight, 0, TAG_DONE);
+    }
+    if (row)
+        SetAttrs(grp, LAYOUT_AddChild, (ULONG)row, CHILD_WeightedHeight, 0, TAG_DONE);
+    return grp;
 }
 
-static Object *connections_page(void)
+static Object *page_object(const ACNCPage *p)
 {
-    return VGroupObject,
-        LAYOUT_SpaceOuter, TRUE,
-        LAYOUT_BevelStyle, BVS_GROUP,
-        LAYOUT_Label, "Connections",
-        LINE("Open sockets on this Amiga"),
-        LINE("Program       Protocol   Local          Remote         State"),
-        LINE("-------------------------------------------------------------"),
-        LINE("Connection inventory pending ACNet private tags."),
-        LINE("Version 1 is read-only."),
-    LayoutEnd;
-}
-
-static Object *diagnostics_page(void)
-{
-    return VGroupObject,
-        LAYOUT_SpaceOuter, TRUE,
-        LAYOUT_BevelStyle, BVS_GROUP,
-        LAYOUT_Label, "Diagnostics",
-        LINE("Diagnostics contact outside services only when requested."),
-        LAYOUT_AddChild, ButtonObject,
-            GA_ID, GID_DIAG_DNS,
-            GA_Text, "Look up a name...",
-            GA_RelVerify, TRUE,
-        ButtonEnd,
-        LAYOUT_AddChild, ButtonObject,
-            GA_ID, GID_DIAG_CONNECT,
-            GA_Text, "Test a connection...",
-            GA_RelVerify, TRUE,
-        ButtonEnd,
-        LAYOUT_AddChild, ButtonObject,
-            GA_ID, GID_DIAG_INTERNET,
-            GA_Text, "Check the internet...",
-            GA_RelVerify, TRUE,
-        ButtonEnd,
-        LAYOUT_AddChild, ButtonObject,
-            GA_ID, GID_DIAG_COPY,
-            GA_Text, "Copy report",
-            GA_RelVerify, TRUE,
-        ButtonEnd,
-    LayoutEnd;
-}
-
-static Object *log_page(void)
-{
-    return VGroupObject,
-        LAYOUT_SpaceOuter, TRUE,
-        LAYOUT_BevelStyle, BVS_GROUP,
-        LAYOUT_Label, "ACNet Event Log",
-        LINE("Event ring support is the next ACNet device/HostSocket backend."),
-        LINE("Online/offline, DNS failures and policy refusals will appear here."),
-        LAYOUT_AddChild, HGroupObject,
-            LAYOUT_AddChild, ButtonObject,
-                GA_ID, GID_LOG_CLEAR,
-                GA_Text, "Clear",
-                GA_RelVerify, TRUE,
-                GA_Disabled, TRUE,
-            ButtonEnd,
-            LAYOUT_AddChild, ButtonObject,
-                GA_ID, GID_LOG_SAVE,
-                GA_Text, "Save as...",
-                GA_RelVerify, TRUE,
-                GA_Disabled, TRUE,
-            ButtonEnd,
-        LayoutEnd,
-        CHILD_WeightedHeight, 0,
-    LayoutEnd;
+    Object *page;
+    if (p->groups == 1)
+        return group_object(&p->group[0], TRUE);
+    page = NewObject(LAYOUT_GetClass(), NULL, LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
+                     LAYOUT_SpaceOuter, TRUE, LAYOUT_SpaceInner, TRUE, TAG_DONE);
+    if (page)
+        SetAttrs(page, LAYOUT_AddChild, (ULONG)group_object(&p->group[0], FALSE),
+                 LAYOUT_AddChild, (ULONG)group_object(&p->group[1], FALSE), TAG_DONE);
+    return page;
 }
 
 static BOOL create_window_object(void)
 {
-    Object *pages = NULL;
+    Object *pages = PageObject, LAYOUT_DeferLayout, TRUE, PageEnd;
+    int i;
+
+    if (!pages) return FALSE;
+    for (i = 0; i < ACNC_PAGES; ++i)
+        SetAttrs(pages, PAGE_Add, (ULONG)page_object(&acnc_page[i]), TAG_DONE);
 
     win_obj = WindowObject,
         WA_Title, "ACNetControl",
@@ -313,7 +137,7 @@ static BOOL create_window_object(void)
             LAYOUT_DeferLayout, TRUE,
 
             LAYOUT_AddImage, LabelObject,
-                LABEL_Text, "ACNetControl - Network Configuration for AmigaChrome",
+                LABEL_Text, ACNC_TITLE,
             LabelEnd,
             CHILD_WeightedHeight, 0,
 
@@ -322,18 +146,11 @@ static BOOL create_window_object(void)
                 GA_RelVerify, TRUE,
                 CLICKTAB_Labels, &tabs,
                 CLICKTAB_Current, 0,
-                CLICKTAB_PageGroup, pages = PageObject,
-                    LAYOUT_DeferLayout, TRUE,
-                    PAGE_Add, status_page(),
-                    PAGE_Add, wifi_page(),
-                    PAGE_Add, connections_page(),
-                    PAGE_Add, diagnostics_page(),
-                    PAGE_Add, log_page(),
-                PageEnd,
+                CLICKTAB_PageGroup, pages,
             ClickTabEnd,
 
             LAYOUT_AddImage, LabelObject,
-                LABEL_Text, status_bottom,
+                LABEL_Text, acnc_status_line(),
             LabelEnd,
             CHILD_WeightedHeight, 0,
         LayoutEnd,
@@ -361,13 +178,12 @@ static void show_window(void)
 
 static BOOL open_bases(void)
 {
-    CxBase       = OpenLibrary("commodities.library", 37);
     WindowBase   = OpenLibrary("window.class", 0);
     LayoutBase   = OpenLibrary("gadgets/layout.gadget", 0);
     ClickTabBase = OpenLibrary("gadgets/clicktab.gadget", 0);
     LabelBase    = OpenLibrary("images/label.image", 0);
     ButtonBase   = OpenLibrary("gadgets/button.gadget", 0);
-    return CxBase && WindowBase && LayoutBase && ClickTabBase && LabelBase && ButtonBase;
+    return WindowBase && LayoutBase && ClickTabBase && LabelBase && ButtonBase;
 }
 
 static void close_bases(void)
@@ -377,108 +193,35 @@ static void close_bases(void)
     if (ClickTabBase) CloseLibrary(ClickTabBase);
     if (LayoutBase)   CloseLibrary(LayoutBase);
     if (WindowBase)   CloseLibrary(WindowBase);
-    if (CxBase)       CloseLibrary(CxBase);
 }
 
-static BOOL create_broker(void)
-{
-    struct NewBroker nb;
-    CxObj *hotkey;
-    LONG err = 0;
-
-    cx_port = CreateMsgPort();
-    if (!cx_port) return FALSE;
-
-    nb.nb_Version = NB_VERSION;
-    nb.nb_Name = "ACNetControl";
-    nb.nb_Title = "ACNet Network Control";
-    nb.nb_Descr = "Status and controls for AmigaChrome ACNet";
-    nb.nb_Unique = NBU_UNIQUE | NBU_NOTIFY;
-    nb.nb_Flags = COF_SHOW_HIDE;
-    nb.nb_Pri = 0;
-    nb.nb_Port = cx_port;
-    nb.nb_ReservedChannel = 0;
-
-    broker = CxBroker(&nb, &err);
-    if (!broker) return FALSE;
-
-    hotkey = HotKey("ctrl alt n", cx_port, HOTKEY_ID);
-    if (hotkey) AttachCxObj(broker, hotkey);
-    ActivateCxObj(broker, 1);
-    return TRUE;
-}
-
-static void destroy_broker(void)
-{
-    if (broker) {
-        DeleteCxObjAll(broker);
-        broker = NULL;
-    }
-    if (cx_port) {
-        struct Message *m;
-        while ((m = GetMsg(cx_port)) != NULL) ReplyMsg(m);
-        DeleteMsgPort(cx_port);
-        cx_port = NULL;
-    }
-}
-
-static BOOL handle_cx_messages(void)
-{
-    CxMsg *msg;
-    BOOL running = TRUE;
-
-    while ((msg = (CxMsg *)GetMsg(cx_port)) != NULL) {
-        ULONG type = CxMsgType(msg);
-        ULONG id = CxMsgID(msg);
-
-        if (type == CXM_COMMAND) {
-            switch (id) {
-                case CXCMD_APPEAR:
-                case CXCMD_UNIQUE:
-                    show_window();
-                    break;
-                case CXCMD_DISAPPEAR:
-                    hide_window();
-                    break;
-                case CXCMD_ENABLE:
-                    ActivateCxObj(broker, 1);
-                    break;
-                case CXCMD_DISABLE:
-                    ActivateCxObj(broker, 0);
-                    break;
-                case CXCMD_KILL:
-                    running = FALSE;
-                    break;
-            }
-        } else if (id == HOTKEY_ID) {
-            show_window();
-        }
-        ReplyMsg((struct Message *)msg);
-    }
-    return running;
-}
-
-int main(void)
+static int control_main(void)
 {
     ULONG winsig = 0, sigs;
     BOOL running = TRUE;
     UWORD code = 0;
+    int i;
 
     if (!open_bases()) {
-        PutStr("ACNetControl: required ReAction/Commodity classes are unavailable.\n");
+        PutStr("ACNetControl: required ReAction classes are unavailable; ACNetControlGT runs without them.\n");
         close_bases();
         return 20;
     }
 
-    read_acnet_state();
-    make_status_strings();
+    NewList(&tabs);                         /* free_tabs() is safe on every path */
+    acnc_read_state();
 
-    if (!make_tabs() || !create_window_object() || !create_broker()) {
+    i = acnc_broker_open();
+    if (i == ACNC_ALREADY_RUNNING) {        /* that copy has been told to show itself */
+        acnc_broker_close();
+        close_bases();
+        return 5;
+    }
+    if (i != 1 || !make_tabs() || !create_window_object()) {
         PutStr("ACNetControl: could not initialise.\n");
-        destroy_broker();
+        acnc_broker_close();
         if (win_obj) DisposeObject(win_obj);
         free_tabs();
-        close_acnet_state();
         close_bases();
         return 20;
     }
@@ -488,10 +231,10 @@ int main(void)
     while (running) {
         winsig = 0;
         if (window) GetAttr(WINDOW_SigMask, win_obj, &winsig);
-        sigs = Wait(winsig | (1UL << cx_port->mp_SigBit) | SIGBREAKF_CTRL_C);
+        sigs = Wait(winsig | acnc_broker_signal() | SIGBREAKF_CTRL_C);
 
         if (sigs & SIGBREAKF_CTRL_C) running = FALSE;
-        if (sigs & (1UL << cx_port->mp_SigBit)) running = handle_cx_messages();
+        if (sigs & acnc_broker_signal()) running = acnc_broker_handle(show_window, hide_window);
 
         if (running && window && (sigs & winsig)) {
             ULONG result;
@@ -505,15 +248,20 @@ int main(void)
                          * their backends already exist. */
                         break;
                 }
+                if (!window) break;
             }
         }
     }
 
     hide_window();
-    destroy_broker();
+    acnc_broker_close();
     if (win_obj) DisposeObject(win_obj);
     free_tabs();
-    close_acnet_state();
     close_bases();
     return 0;
+}
+
+int main(void)
+{
+    return acnc_main_with_stack(control_main, 32768);
 }
