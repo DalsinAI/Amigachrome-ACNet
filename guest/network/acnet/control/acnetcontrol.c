@@ -37,12 +37,15 @@
 
 #include "../include/acnet_device.h"
 
-struct Library *CxBase;
-struct Library *ButtonBase;
-struct Library *ClickTabBase;
-struct Library *LabelBase;
-struct Library *LayoutBase;
-struct Library *WindowBase;
+/* Strong definitions stop libnix libstubs.a from supplying its own class
+ * bases and pre-main autoinit names (notably window.library and
+ * gadgets/label.gadget, which are not present in stock OS 3.2.3 ReAction). */
+struct Library *CxBase = NULL;
+struct Library *ButtonBase = NULL;
+struct Library *ClickTabBase = NULL;
+struct Library *LabelBase = NULL;
+struct Library *LayoutBase = NULL;
+struct Library *WindowBase = NULL;
 
 enum {
     GID_TABS = 1,
