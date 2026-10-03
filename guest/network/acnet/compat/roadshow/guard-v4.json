@@ -1,6 +1,6 @@
 {
   "name": "Known legacy bsdsocket extension guard tail",
-  "includes": ["<net/route.h>"],
+  "includes": ["<exec/lists.h>", "<utility/tagitem.h>", "<net/route.h>"],
   "first_slot": 57,
   "last_slot": 139,
   "slots": [
@@ -86,17 +86,23 @@
     {
       "slot": 72,
       "name": "ReleaseInterfaceList",
-      "kind": "void"
+      "kind": "void",
+      "ret": "VOID",
+      "args": [["struct List *", "list", "a0"]]
     },
     {
       "slot": 73,
       "name": "ObtainInterfaceList",
-      "kind": "ptr"
+      "kind": "ptr",
+      "ret": "struct List *",
+      "args": []
     },
     {
       "slot": 74,
       "name": "QueryInterfaceTagList",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [["STRPTR", "name", "a0"], ["struct TagItem *", "tags", "a1"]]
     },
     {
       "slot": 75,
@@ -131,7 +137,9 @@
     {
       "slot": 81,
       "name": "GetNetworkStatistics",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [["LONG", "type", "d0"], ["LONG", "version", "d1"], ["APTR", "destination", "a0"], ["LONG", "size", "d2"]]
     },
     {
       "slot": 82,
@@ -146,12 +154,16 @@
     {
       "slot": 84,
       "name": "ReleaseDomainNameServerList",
-      "kind": "void"
+      "kind": "void",
+      "ret": "VOID",
+      "args": [["struct List *", "list", "a0"]]
     },
     {
       "slot": 85,
       "name": "ObtainDomainNameServerList",
-      "kind": "ptr"
+      "kind": "ptr",
+      "ret": "struct List *",
+      "args": []
     },
     {
       "slot": 86,

@@ -1,5 +1,31 @@
 # ACNet Status
 
+## 2026-10-03 - Drop-in IPv4 compatibility
+
+ACNet now has a public native control plane (`acnetwork.library`) plus a read-only
+Roadshow-shaped compatibility adapter in `bsdsocket.library`. The adapter exposes
+guest-facing `acnet0` state while mutable host/network administration remains guarded.
+
+Current qualified capabilities:
+
+- core BSD sockets: TCP, UDP, DNS, WaitSelect/non-blocking and constrained ICMP;
+- ACTCPTools: hostname, resolve, ping, traceroute, arp, ifconfig, route, netstat, acnetctl;
+- native ACNetwork views: status, interfaces, routes, neighbours, DNS and this-instance sockets;
+- ACNetControl: live status/connections, Refresh, soft online/offline and support report;
+- Roadshow read-only APIs: routes/ARP, interfaces, DNS list and network/socket statistics;
+- `gethostid()` implemented from the guest-facing IPv4 interface;
+- logical core: 44 implemented application vectors, 2 honest core stubs;
+- compatibility guard tail: 83 slots, 8 read-only implementations; all other slots remain guards.
+
+Qualification:
+
+- HostSocket focused suite: 28 tests run, OK, skipped=2;
+- Roadshow-shaped OS 3.2.3 probe: PASS, 0 failures, RC 0;
+- live interface `acnet0`: IPv4, MTU 1500, 1 Gbit/s link, Ethernet identity;
+- normal route enumeration: 2 live routes;
+- DNS enumeration: live resolver server returned;
+- TCP/UDP socket/status APIs: PASS;
+- Instance-6 restored byte-for-byte after live qualification.
 ## 2026-10-02 - Clean Core
 
 ACNet's default `bsdsocket.library` is now independent of Roadshow-specific ABI material. The vector table is generated from ACNet's own classic Amiga BSD socket manifest.
