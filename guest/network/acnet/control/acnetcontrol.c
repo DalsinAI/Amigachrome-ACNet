@@ -45,6 +45,7 @@
 
 #include <acnetwork.h>
 #include <proto/acnetwork.h>
+#include <acwifi_device.h>
 #include "../include/acnet_device.h"
 
 /* Strong definitions stop libnix libstubs.a from supplying its own class
@@ -65,6 +66,9 @@ enum {
     GID_REFRESH,
     GID_GO_OFFLINE,
     GID_WIFI_RESCAN,
+    GID_WIFI_JOIN,
+    GID_WIFI_LEAVE,
+    GID_WIFI_FORGET,
     GID_DIAG_DNS,
     GID_DIAG_CONNECT,
     GID_DIAG_INTERNET,
@@ -82,6 +86,8 @@ static struct Window *window;
 static struct List tabs;
 static struct MsgPort *dev_port;
 static struct IOStdReq *dev_req;
+static struct MsgPort *wifi_port;
+static struct IOStdReq *wifi_req;
 static ULONG acnet_state;
 static struct ACNetworkStatus live_status;
 static BOOL have_live_status;
@@ -114,6 +120,10 @@ static char status_toggle[32];
 static char conn_lines[6][96];
 static char log_lines[6][96] = { "No ACNet events yet.", "", "", "", "", "" };
 static ULONG live_log_seq;
+static char wifi_lines[6][96] = { "Press Rescan to list host-visible Wi-Fi networks.", "", "", "", "", "" };
+static char wifi_result[96] = "Wi-Fi control follows the Cradle Host Wi-Fi control switch.";
+static char wifi_ssid[33] = "";
+static Object *wifi_ssid_obj;
 static Object *diag_name_obj;
 static Object *diag_host_obj;
 static Object *diag_port_obj;
@@ -133,6 +143,16 @@ static ULONG acn_state_call(struct Device *dev)
     return d0;
 }
 
+static LONG acw_control_call(struct Device *dev, struct ACWiFiCall *call)
+{
+    register struct Device *a6 __asm("a6") = dev;
+    register struct ACWiFiCall *a0 __asm("a0") = call;
+    register LONG d0 __asm("d0");
+    __asm volatile ("jsr -42(%%a6)" : "=r"(d0), "+r"(a0) : "r"(a6)
+                    : "d1", "a1", "cc", "memory");
+    return d0;
+}
+
 static void read_acnet_state(void)
 {
     acnet_state = 0;
@@ -144,10 +164,30 @@ static void read_acnet_state(void)
     if (OpenDevice(ACNET_DEVICE_NAME, 0, (struct IORequest *)dev_req, 0) == 0) {
         acnet_state = acn_state_call(dev_req->io_Device);
     }
+
+    wifi_port = CreateMsgPort();
+    if (!wifi_port) return;
+    wifi_req = (struct IOStdReq *)CreateIORequest(wifi_port, sizeof(*wifi_req));
+    if (!wifi_req) return;
+    if (OpenDevice(ACWIFI_DEVICE_NAME, 0, (struct IORequest *)wifi_req, 0) != 0) {
+        DeleteIORequest((struct IORequest *)wifi_req);
+        DeleteMsgPort(wifi_port);
+        wifi_req = NULL;
+        wifi_port = NULL;
+    }
 }
 
 static void close_acnet_state(void)
 {
+    if (wifi_req) {
+        if (wifi_req->io_Device) CloseDevice((struct IORequest *)wifi_req);
+        DeleteIORequest((struct IORequest *)wifi_req);
+        wifi_req = NULL;
+    }
+    if (wifi_port) {
+        DeleteMsgPort(wifi_port);
+        wifi_port = NULL;
+    }
     if (dev_req) {
         if (dev_req->io_Device) CloseDevice((struct IORequest *)dev_req);
         DeleteIORequest((struct IORequest *)dev_req);
@@ -454,10 +494,50 @@ static Object *wifi_page(void)
     return VGroupObject,
         LAYOUT_SpaceOuter, TRUE,
         LAYOUT_BevelStyle, BVS_GROUP,
-        LAYOUT_Label, "Wi-Fi",
-        LINE("Wi-Fi control is not fitted in this build yet."),
-        LINE("ACNet networking remains fully usable through the host link."),
-        LINE("When acwifi.device lands this page will gain scan/join/leave controls."),
+        LAYOUT_Label, "Host Wi-Fi Control",
+        LINE(wifi_result),
+        LINE(wifi_lines[0]),
+        LINE(wifi_lines[1]),
+        LINE(wifi_lines[2]),
+        LINE(wifi_lines[3]),
+        LINE(wifi_lines[4]),
+        LINE(wifi_lines[5]),
+        LAYOUT_AddChild, ButtonObject,
+            GA_ID, GID_WIFI_RESCAN,
+            GA_Text, "Rescan",
+            GA_RelVerify, TRUE,
+            GA_Disabled, wifi_req ? FALSE : TRUE,
+        ButtonEnd,
+        CHILD_WeightedHeight, 0,
+        LAYOUT_AddChild, HGroupObject,
+            LINE("Known SSID"),
+            LAYOUT_AddChild, wifi_ssid_obj = StringObject,
+                STRINGA_TextVal, wifi_ssid,
+                STRINGA_MaxChars, sizeof(wifi_ssid) - 1,
+                GA_TabCycle, TRUE,
+            StringEnd,
+            LAYOUT_AddChild, ButtonObject,
+                GA_ID, GID_WIFI_JOIN,
+                GA_Text, "Join...",
+                GA_RelVerify, TRUE,
+                GA_Disabled, wifi_req ? FALSE : TRUE,
+            ButtonEnd,
+            LAYOUT_AddChild, ButtonObject,
+                GA_ID, GID_WIFI_FORGET,
+                GA_Text, "Forget...",
+                GA_RelVerify, TRUE,
+                GA_Disabled, wifi_req ? FALSE : TRUE,
+            ButtonEnd,
+        LayoutEnd,
+        CHILD_WeightedHeight, 0,
+        LAYOUT_AddChild, ButtonObject,
+            GA_ID, GID_WIFI_LEAVE,
+            GA_Text, "Disconnect host Wi-Fi...",
+            GA_RelVerify, TRUE,
+            GA_Disabled, wifi_req ? FALSE : TRUE,
+        ButtonEnd,
+        CHILD_WeightedHeight, 0,
+        LINE("Only host-known Wi-Fi profiles may be joined; no password crosses into the Amiga."),
     LayoutEnd;
 }
 
@@ -489,6 +569,133 @@ static void copy_string_field(Object *obj, char *out, ULONG size)
     if (!text) text = (STRPTR)"";
     strncpy(out, (char *)text, size - 1);
     out[size - 1] = 0;
+}
+
+static const char *wifi_security_name(UBYTE security)
+{
+    switch (security) {
+        case ACWIFI_SECURITY_OPEN: return "open";
+        case ACWIFI_SECURITY_WEP: return "WEP";
+        case ACWIFI_SECURITY_WPA: return "WPA";
+        case ACWIFI_SECURITY_WPA2: return "WPA2";
+        case ACWIFI_SECURITY_WPA3: return "WPA3";
+        default: return "secured";
+    }
+}
+
+static void format_wifi_rows(const struct ACWiFiNetwork *rows, LONG count)
+{
+    LONG i;
+    for (i = 0; i < 6; ++i) wifi_lines[i][0] = 0;
+    if (count <= 0) {
+        strcpy(wifi_lines[0], "No Wi-Fi networks returned.");
+        return;
+    }
+    if (count > 6) count = 6;
+    for (i = 0; i < count; ++i) {
+        sprintf(wifi_lines[i], "%c %-32s %3u%% ch %-3lu %-5s %s",
+                (rows[i].flags & ACWIFI_FLAG_ACTIVE) ? '*' : ' ',
+                rows[i].ssid,
+                (unsigned)rows[i].signal,
+                (unsigned long)rows[i].channel,
+                wifi_security_name(rows[i].security),
+                (rows[i].flags & ACWIFI_FLAG_KNOWN) ? "known" : "");
+    }
+}
+
+static LONG run_wifi_call(ULONG command, const char *ssid,
+                          struct ACWiFiNetwork *rows, ULONG capacity)
+{
+    struct ACWiFiCall call;
+    if (!wifi_req || !wifi_req->io_Device) {
+        strcpy(wifi_result, "acwifi.device is not installed.");
+        return -1;
+    }
+    memset(&call, 0, sizeof(call));
+    call.command = command;
+    call.ssid = ssid;
+    call.networks = rows;
+    call.capacity = capacity;
+    acw_control_call(wifi_req->io_Device, &call);
+    if (call.error == 1)
+        strcpy(wifi_result, "Host Wi-Fi control is disabled in Cradle.");
+    else if (call.error == 50)
+        strcpy(wifi_result, "ACNet is offline in Cradle.");
+    else if (call.error == 4)
+        strcpy(wifi_result, "Wi-Fi operation interrupted.");
+    else if (call.error)
+        sprintf(wifi_result, "Wi-Fi operation failed (errno %lu).", (unsigned long)call.error);
+    return call.error ? -1 : call.result;
+}
+
+static void run_wifi_scan(void)
+{
+    struct ACWiFiNetwork rows[6];
+    LONG count = run_wifi_call(ACWIFI_SCAN, NULL, rows, 6);
+    if (count >= 0) {
+        format_wifi_rows(rows, count);
+        sprintf(wifi_result, "Wi-Fi scan complete: %ld network%s.", (long)count, count == 1 ? "" : "s");
+    }
+}
+
+static void run_wifi_status(void)
+{
+    struct ACWiFiNetwork row;
+    LONG count = run_wifi_call(ACWIFI_STATUS, NULL, &row, 1);
+    if (count > 0) {
+        format_wifi_rows(&row, 1);
+        sprintf(wifi_result, "Host Wi-Fi is associated with %s.", row.ssid);
+    } else if (count == 0) {
+        strcpy(wifi_result, "Host Wi-Fi is not currently associated.");
+    }
+}
+
+static BOOL confirm_wifi_change(const char *text)
+{
+    struct EasyStruct easy = {
+        sizeof(struct EasyStruct), 0,
+        (STRPTR)"ACNetControl - Host Wi-Fi",
+        (STRPTR)text,
+        (STRPTR)"Proceed|Cancel"
+    };
+    return EasyRequestArgs(window, &easy, NULL, NULL) == 1;
+}
+
+static void read_wifi_ssid(void)
+{
+    copy_string_field(wifi_ssid_obj, wifi_ssid, sizeof(wifi_ssid));
+}
+
+static void run_wifi_join(void)
+{
+    read_wifi_ssid();
+    if (!wifi_ssid[0]) { strcpy(wifi_result, "Enter a known SSID first."); return; }
+    if (!confirm_wifi_change("Joining this profile changes the host PC's Wi-Fi connection."))
+        return;
+    if (run_wifi_call(ACWIFI_JOIN, wifi_ssid, NULL, 0) >= 0) {
+        sprintf(wifi_result, "Joined host Wi-Fi profile %s.", wifi_ssid);
+        run_wifi_status();
+    }
+}
+
+static void run_wifi_leave(void)
+{
+    if (!confirm_wifi_change("Disconnecting Wi-Fi changes the host PC's network connection."))
+        return;
+    if (run_wifi_call(ACWIFI_LEAVE, NULL, NULL, 0) >= 0)
+        strcpy(wifi_result, "Host Wi-Fi disconnected.");
+}
+
+static void run_wifi_forget(void)
+{
+    read_wifi_ssid();
+    if (!wifi_ssid[0]) { strcpy(wifi_result, "Enter a known SSID first."); return; }
+    if (!confirm_wifi_change("Forgetting this profile removes it from the host PC."))
+        return;
+    if (run_wifi_call(ACWIFI_FORGET, wifi_ssid, NULL, 0) >= 0) {
+        sprintf(wifi_result, "Forgot host Wi-Fi profile %s.", wifi_ssid);
+        run_wifi_scan();
+    }
 }
 
 static void read_diag_fields(void)
@@ -940,6 +1147,22 @@ int main(void)
                             case GID_GO_OFFLINE:
                                 set_soft_online(!(have_live_status &&
                                                   (live_status.state & ACNETWORK_STATE_ONLINE)));
+                                refresh_ui = TRUE;
+                                break;
+                            case GID_WIFI_RESCAN:
+                                run_wifi_scan();
+                                refresh_ui = TRUE;
+                                break;
+                            case GID_WIFI_JOIN:
+                                run_wifi_join();
+                                refresh_ui = TRUE;
+                                break;
+                            case GID_WIFI_LEAVE:
+                                run_wifi_leave();
+                                refresh_ui = TRUE;
+                                break;
+                            case GID_WIFI_FORGET:
+                                run_wifi_forget();
                                 refresh_ui = TRUE;
                                 break;
                             case GID_DIAG_DNS:
