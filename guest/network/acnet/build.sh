@@ -57,7 +57,11 @@ if [ -f "$HERE/tests/modern_compat_probe.c" ]; then
 fi
 
 if [ -f "$HERE/control/acnetcontrol.c" ]; then
-    "$CC" -m68000 -O2 -Wall -Wno-pointer-sign -noixemul -I"$HERE/include" -I"$GUEST/network/acnetwork/include" \
+    "$CC" -m68000 -O2 -Wall -Wno-pointer-sign -noixemul -I"$HERE/include" -I"$GUEST/network/acnetwork/include" -I"$GUEST/network/acwifi/include" \
         -o "$OUT/ACNetControl" "$HERE/control/acnetcontrol.c" -lamiga
     echo "$OUT/ACNetControl ($(wc -c < "$OUT/ACNetControl") bytes)"
+fi
+
+if [ -f "$GUEST/network/acwifi/build.sh" ]; then
+    sh "$GUEST/network/acwifi/build.sh" "$OUT"
 fi

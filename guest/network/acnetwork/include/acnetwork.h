@@ -18,6 +18,13 @@
 #define ACNETWORK_CMD_SET_ONLINE   0x39
 #define ACNETWORK_CMD_DNS_SERVERS  0x3a
 #define ACNETWORK_CMD_LOG          0x3d
+#define ACNETWORK_CMD_WIFI_SCAN    0x40
+#define ACNETWORK_CMD_WIFI_STATUS  0x41
+#define ACNETWORK_CMD_WIFI_JOIN    0x42
+#define ACNETWORK_CMD_WIFI_LEAVE   0x43
+#define ACNETWORK_CMD_WIFI_FORGET  0x44
+#define ACNETWORK_CMD_WIFI_ANSWER  0x45
+#define ACNETWORK_CMD_WIFI_CANCEL  0x46
 
 #define ACNETWORK_NEIGH_VALID      0x01
 #define ACNETWORK_SOCKET_OPEN      0
@@ -99,6 +106,29 @@ struct ACNetworkLogEntry {
     char text[84];
 };
 typedef char ACNetworkLogEntry_size_must_be_96[(sizeof(struct ACNetworkLogEntry) == 96) ? 1 : -1];
+
+#define ACWIFI_FLAG_KNOWN   0x01
+#define ACWIFI_FLAG_ACTIVE  0x02
+#define ACWIFI_FLAG_SECURED 0x04
+#define ACWIFI_SECURITY_OPEN  0
+#define ACWIFI_SECURITY_WEP   1
+#define ACWIFI_SECURITY_WPA   2
+#define ACWIFI_SECURITY_WPA2  3
+#define ACWIFI_SECURITY_WPA3  4
+#define ACWIFI_SECURITY_OTHER 5
+
+struct ACWiFiNetwork {
+    char ssid[33];
+    UBYTE bssid[6];
+    UBYTE signal;
+    UBYTE security;
+    UBYTE flags;
+    UBYTE reserved0[2];
+    ULONG channel;
+    ULONG rate_mbps;
+    UBYTE reserved1[12];
+};
+typedef char ACWiFiNetwork_size_must_be_64[(sizeof(struct ACWiFiNetwork) == 64) ? 1 : -1];
 
 struct ACNetworkRequest {
     ULONG command;

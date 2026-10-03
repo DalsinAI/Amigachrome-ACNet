@@ -95,6 +95,13 @@
 #define ACHS_CMD_NET_BY_NAME      0x3b   /* tx=name\0; rx=canonical\0 + IPv4 network */
 #define ACHS_CMD_NET_BY_ADDR      0x3c   /* a0=host-order IPv4 network; same rx */
 #define ACHS_CMD_LOG              0x3d   /* a0=sequence already seen, a1=max records; rx: ACNetworkLogEntry records */
+#define ACHS_CMD_WIFI_SCAN        0x40   /* -> async ticket; answer: ACWiFiNetwork records */
+#define ACHS_CMD_WIFI_STATUS      0x41   /* -> async ticket; answer: active ACWiFiNetwork, or 0 records */
+#define ACHS_CMD_WIFI_JOIN        0x42   /* tx=known SSID\0 -> async ticket */
+#define ACHS_CMD_WIFI_LEAVE       0x43   /* -> async ticket */
+#define ACHS_CMD_WIFI_FORGET      0x44   /* tx=known SSID\0 -> async ticket */
+#define ACHS_CMD_WIFI_ANSWER      0x45   /* a0=ticket -> result/rx, EINPROGRESS until done */
+#define ACHS_CMD_WIFI_CANCEL      0x46   /* a0=ticket; forget/cancel outstanding job */
 
 /* POLL events (poll(2)'s values). */
 #define ACHS_POLLIN               0x0001
