@@ -16,6 +16,7 @@
 #include <netdb.h>
 #include <stdio.h>
 #include <string.h>
+#include "acnet_stack.h"
 
 struct Library *SocketBase;
 
@@ -252,7 +253,7 @@ static void test_churn(void)
     result("128 socket open/close cycles", ok);
 }
 
-int main(void)
+static int bsdqual_main(int argc, char **argv)
 {
     printf("ACNet bsdsocket.library qualification\n");
     printf("====================================\n");
@@ -275,4 +276,11 @@ int main(void)
     printf("PASS=%d FAIL=%d\n",passes,failures);
     CloseLibrary(SocketBase);
     return failures ? 20 : 0;
+}
+
+/* 32 KB: WaitSelect runs about 1.3 KB deep in the library, on this task's
+ * stack; a 4 KB Shell stack should not decide a qualification run. */
+int main(int argc, char **argv)
+{
+    return acnet_main_with_stack(bsdqual_main, argc, argv, 32768);
 }
