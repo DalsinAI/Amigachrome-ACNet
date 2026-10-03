@@ -4,6 +4,8 @@
 # program acnettest (libnix), with the os32 stove (bebbo's m68k-amigaos-gcc,
 # NDK 3.2). The library vector table is generated from ACNet's own classic
 # Amiga BSD socket ABI manifest; no third-party socket SFD is required.
+# bsdqual and ACNetControl link common/os3/acnet_stack.c: this libnix ignores
+# __stack, so they swap to a stack of their own.
 #   network/acnet/build.sh [OUT_DIR]     (default build/guest/os32/acnet)
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -37,12 +39,13 @@ if [ -f "$HERE/tests/acnettest.c" ]; then
 fi
 
 if [ -f "$HERE/tests/bsdqual.c" ]; then
-    "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul -o "$OUT/bsdqual" "$HERE/tests/bsdqual.c"
+    "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul -I"$GUEST/common/os3" -o "$OUT/bsdqual" \
+        "$HERE/tests/bsdqual.c" "$GUEST/common/os3/acnet_stack.c"
     echo "$OUT/bsdqual ($(wc -c < "$OUT/bsdqual") bytes)"
 fi
 
 if [ -f "$HERE/control/acnetcontrol.c" ]; then
-    "$CC" -m68000 -O2 -Wall -Wno-pointer-sign -noixemul -I"$HERE/include" \
-        -o "$OUT/ACNetControl" "$HERE/control/acnetcontrol.c" -lamiga
+    "$CC" -m68000 -O2 -Wall -Wno-pointer-sign -noixemul -I"$HERE/include" -I"$GUEST/common/os3" \
+        -o "$OUT/ACNetControl" "$HERE/control/acnetcontrol.c" "$GUEST/common/os3/acnet_stack.c" -lamiga
     echo "$OUT/ACNetControl ($(wc -c < "$OUT/ACNetControl") bytes)"
 fi
