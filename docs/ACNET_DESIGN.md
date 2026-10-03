@@ -14,6 +14,7 @@ This is the build design. It takes the 30 September designs (capsules ACNet BSDS
 | `DEVS:acnet.device` | The one driver that touches the card's HostSocket block. It owns the lock and the interrupt and wakes waiting tasks. It gives the library private direct calls, with no I/O request per packet. |
 | `DEVS:acwifi.device` | Control of the host's Wi-Fi through the same card: scan, status, join, leave, forget. |
 | ACNetControl | A ReAction Commodity with Status, Wi-Fi and Diagnostics tabs. |
+| ACNetControlGT | The same Commodity in GadTools, for AmigaOS 2.04 to 3.2 without ReAction. |
 | The host service | Part of the instance's bridge on Linux. It owns the real sockets, DNS and the Wi-Fi requests. |
 
 ```
@@ -34,7 +35,7 @@ Linux does the TCP/IP. The Amiga side is a thin layer that tests can pin down. T
 2. **Off until switched on.** Each instance has a Network switch in Cradle's hardware panel. The library still opens with the switch off, and reports the network down (ENETDOWN).
 3. **Internet and LAN, not this PC.** 127.0.0.1 is the Amiga's own loopback. The PC's own addresses are refused, which keeps out Cradle, other instances' bridges and other services on the PC.
 4. **Two drivers, one card.** `acnet.device` and `acwifi.device` both talk to ACNet, which shows in autoconfig as a card in its own right (Dalsin product 6, the number main reserved for networking). Dale added this on 1 October. Its top half is kept for the later packet rings. Product 8 stays reserved.
-5. **One Commodity**, ACNetControl, written in ReAction, with a Wi-Fi tab. ReAction ships with OS 3.2.3 and NDK 3.2 has its headers; MUI would be a third-party install. This merges the 30 September design's two Commodities.
+5. **One Commodity**, ACNetControl, written in ReAction, with a Wi-Fi tab. ReAction ships with OS 3.2.3 and NDK 3.2 has its headers; MUI would be a third-party install. This merges the 30 September design's two Commodities. ACNetControlGT (4 October) shows the same pages in GadTools for machines without ReAction; both draw from `control/acnetcontrol_core.c` and register the same broker, so only one runs.
 6. **Host Wi-Fi control is a separate per-instance permission, off by default.** Joining a network changes the whole PC's Wi-Fi.
 7. **No paid licence and no weak spots.** The library must pass bsdsocktest and a matrix of real programs before release.
 
