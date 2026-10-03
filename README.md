@@ -44,6 +44,7 @@ bsdsocket.library
 acnettest
 bsdqual
 ACNetControl
+ACNetControlGT
 ```
 
 The vector table is generated from ACNet's checked-in `guest/network/acnet/abi/bsdsocket-v4.json` manifest. No third-party socket-library SFD is read by the default build. The compatibility guard layout is a checked-in safety manifest under `guest/network/acnet/compat/`.
