@@ -92,6 +92,8 @@
 #define ACHS_CMD_SOCKETS          0x38   /* a0=max records; rx: ACNetworkSocket records */
 #define ACHS_CMD_SET_ONLINE       0x39   /* a0=0 soft-offline, 1 online; -> state */
 #define ACHS_CMD_DNS_SERVERS      0x3a   /* a0=max addresses; rx: packed IPv4 addresses */
+#define ACHS_CMD_NET_BY_NAME      0x3b   /* tx=name\0; rx=canonical\0 + IPv4 network */
+#define ACHS_CMD_NET_BY_ADDR      0x3c   /* a0=host-order IPv4 network; same rx */
 
 /* POLL events (poll(2)'s values). */
 #define ACHS_POLLIN               0x0001

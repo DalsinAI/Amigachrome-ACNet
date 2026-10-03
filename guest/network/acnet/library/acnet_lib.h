@@ -70,6 +70,9 @@ struct SocketBase {
     ULONG haddr[NAME_MAX_ADDRS];
     struct servent sent;
     char sname[64], sproto[16];
+    struct netent nent;
+    char nname[64];
+    char *naliases[1];
     struct protoent pent;
     char ntoa[16];
     char hostname[64];
