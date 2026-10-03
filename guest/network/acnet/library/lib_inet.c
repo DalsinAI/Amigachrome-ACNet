@@ -1,6 +1,8 @@
 /* ACNet bsdsocket.library: IPv4 address conversion helpers. BSD-3-Clause. */
 #include <exec/types.h>
+#include <proto/exec.h>
 #include <netinet/in.h>
+#include <acnetwork.h>
 #include "lib_internal.h"
 
 static int digit(char c){return c>='0'&&c<='9';}
@@ -15,5 +17,5 @@ in_addr_t bsd_Inet_NetOf(struct SocketBase *sb,in_addr_t in){(void)sb;ULONG h=(i
 in_addr_t bsd_Inet_LnaOf(struct SocketBase *sb,in_addr_t in){in_addr_t n=bsd_Inet_NetOf(sb,in);return in&~n;}
 in_addr_t bsd_Inet_MakeAddr(struct SocketBase *sb,in_addr_t net,in_addr_t host){(void)sb;if(net<128)return(net<<24)|(host&0xffffff);if(net<65536)return(net<<16)|(host&0xffff);return(net<<8)|(host&0xff);}
 in_addr_t bsd_inet_network(struct SocketBase *sb,STRPTR cp){ULONG v;(void)sb;return parse4(cp,&v)?v:(in_addr_t)0xffffffffUL;}
-LONG bsd_In_LocalAddr(struct SocketBase *sb,in_addr_t a){(void)sb;(void)a;return 0;}
-LONG bsd_In_CanForward(struct SocketBase *sb,in_addr_t a){(void)sb;ULONG h=(a>>24)&255;return h!=0&&h!=127&&h<224;}
+LONG bsd_In_LocalAddr(struct SocketBase *sb,in_addr_t a){struct ACNetworkInterface rows[16];ULONG n=0;LONG r=prov_call(sb,ACNETWORK_CMD_INTERFACES,16,0,0,0,NULL,0,rows,sizeof(rows),&n);LONG i,count;if(r<0)return 0;count=r;if((ULONG)count>n/sizeof(rows[0]))count=n/sizeof(rows[0]);for(i=0;i<count;i++){ULONG ip=0,mask=0;CopyMem(rows[i].ipv4,&ip,4);CopyMem(rows[i].netmask,&mask,4);if(a==ip||((a&mask)==(ip&mask)))return 1;}return 0;}
+LONG bsd_In_CanForward(struct SocketBase *sb,in_addr_t a){(void)sb;ULONG h=(a>>24)&255;if(a==0xffffffffUL)return 0;return h!=0&&h!=127&&h<224;}
