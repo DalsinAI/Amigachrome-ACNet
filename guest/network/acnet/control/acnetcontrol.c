@@ -36,7 +36,6 @@
 #include <clib/alib_protos.h>
 
 #include "../include/acnet_device.h"
-#include "acnet_stack.h"
 
 struct Library *CxBase;
 struct Library *ButtonBase;
@@ -459,7 +458,7 @@ static BOOL handle_cx_messages(void)
     return running;
 }
 
-static int acnetcontrol_main(int argc, char **argv)
+int main(void)
 {
     ULONG winsig = 0, sigs;
     BOOL running = TRUE;
@@ -517,11 +516,4 @@ static int acnetcontrol_main(int argc, char **argv)
     close_acnet_state();
     close_bases();
     return 0;
-}
-
-/* 64 KB: the ReAction window and its pages lay out on this task's stack, and
- * Run from S:User-Startup gives 4 KB on AmigaOS 3.2.3 (libnix ignores __stack). */
-int main(int argc, char **argv)
-{
-    return acnet_main_with_stack(acnetcontrol_main, argc, argv, 65536);
 }
