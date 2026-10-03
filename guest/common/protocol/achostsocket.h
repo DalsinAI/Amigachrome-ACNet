@@ -108,6 +108,14 @@
 #define ACHS_CMD_PACKET_SEND      0x53   /* tx: raw Ethernet frame -> bytes accepted */
 #define ACHS_CMD_PACKET_RECV      0x54   /* a0=max bytes -> frame, EAGAIN when empty */
 #define ACHS_CMD_PACKET_STATS     0x55   /* rx: ACPacketStats */
+#define ACHS_CMD_BPF_OPEN         0x60   /* a0=channel or -1 -> handle */
+#define ACHS_CMD_BPF_CLOSE        0x61   /* a0=handle */
+#define ACHS_CMD_BPF_READ         0x62   /* a0=handle, a1=max bytes -> packed BPF records */
+#define ACHS_CMD_BPF_WRITE        0x63   /* a0=handle; tx=raw Ethernet frame */
+#define ACHS_CMD_BPF_SETF         0x64   /* a0=handle, a1=instruction count; tx=8-byte BPF instructions */
+#define ACHS_CMD_BPF_FLUSH        0x65   /* a0=handle */
+#define ACHS_CMD_BPF_ATTACH       0x66   /* a0=handle; attach to ACNet Ethernet */
+#define ACHS_CMD_BPF_STATUS       0x67   /* a0=handle; rx: queued bytes, received, dropped */
 
 /* POLL events (poll(2)'s values). */
 #define ACHS_POLLIN               0x0001

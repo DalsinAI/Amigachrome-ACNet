@@ -34,6 +34,18 @@ struct FD {
     ULONG eventmask;
 };
 
+#define ACNET_BPF_CHANNELS 8
+struct BPFLocal {
+    LONG handle;           /* HostSocket BPF handle; 0: this opener does not own it */
+    ULONG buffer_size;
+    struct timeval timeout;
+    ULONG notify_mask;
+    ULONG interrupt_mask;
+    UBYTE attached;
+    UBYTE immediate;
+    UBYTE pad[2];
+};
+
 /* Every OpenLibrary gets a base of its own, as classic Amiga socket libraries give: the
  * master's jump table and Library header are copied in front of it. */
 struct SocketBase {
@@ -58,6 +70,7 @@ struct SocketBase {
     ULONG sigintr, sigio, sigurg, sigevent;
     LONG dtablesize;
     struct FD *fds;
+    struct BPFLocal bpf[ACNET_BPF_CHANNELS];
     struct MsgPort *tport;
     struct timerequest *treq;      /* timer.device, opened for the first timeout */
     UBYTE tdev_open;

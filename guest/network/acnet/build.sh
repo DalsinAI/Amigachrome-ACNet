@@ -28,7 +28,7 @@ STOVE="$STOVE" "$GUEST/network/acnetwork/build.sh" "$OUT"
 
 L="$HERE/library"
 # lib_base.c first: its start() must be the library's first code.
-LIB="$L/lib_base.c $L/lib_fd.c $L/lib_errno.c $L/lib_tags.c $L/lib_strings.c $L/lib_select.c $L/lib_conn.c $L/lib_io.c $L/lib_opt.c $L/lib_names.c $L/lib_inet.c $HERE/compat/roadshow/routes.c $HERE/compat/roadshow/state.c $HERE/compat/roadshow/modern.c"
+LIB="$L/lib_base.c $L/lib_fd.c $L/lib_errno.c $L/lib_tags.c $L/lib_strings.c $L/lib_select.c $L/lib_conn.c $L/lib_io.c $L/lib_opt.c $L/lib_names.c $L/lib_inet.c $HERE/compat/roadshow/routes.c $HERE/compat/roadshow/state.c $HERE/compat/roadshow/modern.c $HERE/compat/roadshow/bpf.c"
 python3 "$HERE/library/gen_vectors.py" "$ABI" "$OUT/bsdsocket_vectors.c" $LIB --guard "$GUARD"
 "$CC" $BARE $INC $COMPAT_INC -I"$HERE/library" -I"$OUT" -o "$OUT/bsdsocket.library" \
     $LIB "$HERE/library/provider_acnetwork.c" "$OUT/bsdsocket_vectors.c" "$GUEST/common/os3/string.c" -lgcc
@@ -54,6 +54,12 @@ if [ -f "$HERE/tests/modern_compat_probe.c" ]; then
     "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul \
         -o "$OUT/modern-compat-probe" "$HERE/tests/modern_compat_probe.c"
     echo "$OUT/modern-compat-probe ($(wc -c < "$OUT/modern-compat-probe") bytes)"
+fi
+
+if [ -f "$HERE/tests/bpfprobe.c" ]; then
+    "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul $COMPAT_INC \
+        -o "$OUT/bpfprobe" "$HERE/tests/bpfprobe.c"
+    echo "$OUT/bpfprobe ($(wc -c < "$OUT/bpfprobe") bytes)"
 fi
 
 if [ -f "$HERE/tests/sana2probe.c" ]; then

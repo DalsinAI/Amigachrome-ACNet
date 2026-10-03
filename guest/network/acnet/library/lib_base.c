@@ -85,6 +85,7 @@ BPTR lib_close(REG(a6, struct SocketBase *sb))
         if (sb->fds[s].handle) fd_free(sb, s);
     names_close(sb);
     timer_close(sb);
+    bpf_close_all(sb);
     prov_close(sb);
     if (sb->scratch) FreeMem(sb->scratch, SCRATCH_SIZE);
     FreeMem(sb->fds, sb->dtablesize * sizeof(struct FD));

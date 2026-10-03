@@ -8,8 +8,8 @@
  * call. Design: docs/architecture/ACNET_DESIGN.md.
  *
  * The standard device vectors come first (Open -6, Close -12, Expunge -18,
- * reserved -24, BeginIO -30, AbortIO -36). BeginIO answers IOERR_NOCMD until
- * the SANA-II side exists.
+ * reserved -24, BeginIO -30, AbortIO -36). BeginIO implements the SANA-II
+ * packet facade; the private vectors below carry ACNet control/socket calls.
  */
 #include <exec/types.h>
 #include <exec/nodes.h>

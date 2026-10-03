@@ -1,6 +1,6 @@
 # ACNet: networking for AmigaOS 3.2.3 on AmigaChrome
 
-**Status:** Drop-in IPv4 compatibility implemented and qualifying · **Date:** 3 October 2026 · **Guest branch:** `dropin/compat-control-20261003` · **Host branch:** `net/dropin-state-20261003`
+**Status:** Complete-stack code built; consolidated live qualification pending · **Date:** 3 October 2026 · **Guest branch:** `feature/complete-stack-20261003` · **Host branch:** `net/complete-stack-20261003`
 **Created by** Dale Kirkwood, in collaboration with Thufir Hawat.
 
 This is the build design. It takes the 30 September designs (capsules ACNet BSDSocket CX Design and ACNet FastPath HostSocket ACNetDev SANA2) and fixes the shape Dale set on 1 October.
@@ -32,10 +32,11 @@ This is the build design. It takes the 30 September designs (capsules ACNet BSDS
                     instance bridge on Linux
                     sockets, DNS, state/control
 
- acwifi.device remains the future Wi-Fi control path on the same card.
+ acwifi.device is the permission-gated Wi-Fi control path on the same card.
+ packet software may also use acnet.device's SANA-II face; BPF taps that virtual Ethernet independently.
 ```
 
-Linux does the TCP/IP. The Amiga side is a thin layer that tests can pin down. That is what makes it fast and reliable on a 68k. It is the direction the PiStorm and Emu68 networking work took: a purpose-built path, not SANA-II. WinUAE's bsdsocket emulation is the precedent for passing sockets through.
+HostSocket backs the fast application-socket path, while the SANA-II/BPF path uses an unprivileged user-mode Ethernet provider. Applications do not pay the packet-stack cost merely to use BSD sockets. Linux performs the low-level host TCP/IP work for the socket provider; ACNet owns the Amiga ABI, waits, errors, policy and compatibility behaviour.
 
 ## 2. Decisions (Dale, 1 October 2026)
 
@@ -68,7 +69,7 @@ Linux does the TCP/IP. The Amiga side is a thin layer that tests can pin down. T
   - `ACN_AddWaiter` and `ACN_RemWaiter`: a task and its signal, woken on each event.
   - `ACN_State`: present, and online.
 - The library opens it once per opener and calls those vectors directly.
-- **Later:** a packet-oriented compatibility path may be added for tools that genuinely need one. It remains independent of the application socket path.
+- **SANA-II is implemented.** `BeginIO` provides a packet-oriented Ethernet facade for software that bypasses `bsdsocket.library`, including reads/writes, online/offline, station/configuration queries, multicast/broadcast, event requests, type tracking/statistics and NSD device query. It remains independent of the application socket path.
 
 ## 5. acwifi.device
 
@@ -84,7 +85,8 @@ Linux does the TCP/IP. The Amiga side is a thin layer that tests can pin down. T
 - **Connections:** read-only live socket inventory for the instance.
 - **Controls:** Refresh and soft Go online/Go offline call the native ACNetwork control path.
 - **Diagnostics:** editable DNS lookup and TCP host:port connection tests go through the public `bsdsocket.library` ABI; support snapshots save to `RAM:ACNetReport.txt`.
-- **Wi-Fi and Log:** no fake buttons. Until `acwifi.device` and the event-ring backend are fitted, those pages say so explicitly.
+- **Wi-Fi:** backed by the built `acwifi.device`/NetworkManager path; scan/status and permission-gated known-profile join/leave/forget use asynchronous ACNet tickets.
+- **Log:** backed by the bounded native ACNet event ring; the page reads sequenced host events rather than placeholder text.
 - The stock-ReAction autoinit bug was fixed by strongly defining the class bases; the current build is warning-free.
 - Instance-23 carries the current test copy under `SYS:Tools/ACNetwork Tools/ACNetControl`.
 
@@ -98,7 +100,9 @@ Linux does the TCP/IP. The Amiga side is a thin layer that tests can pin down. T
   - TCP and UDP are IPv4-only in v1. General raw sockets remain refused. Two constrained compatibility personalities are implemented: classic ICMP Echo is virtualised over Linux unprivileged datagram-ICMP sockets, and traceroute raw-UDP/IP probes are translated through Linux UDP plus the error queue. Other raw protocols remain refused.
   - Connects and datagrams to 127.0.0.0/8, 0.0.0.0/8, multicast or the PC's own addresses are refused (ECONNREFUSED or ENETUNREACH).
   - Guest loopback works: a connect to 127.0.0.1:P reaches the same instance's own listener on P.
-- **Errno, levels and options** use the Amiga's (BSD) numbers on the board and are mapped to Linux's in the service.
+  - Wi-Fi changes require the separate Cradle Host Wi-Fi control permission and operate on known NetworkManager profiles without passing passwords through the guest ABI.
+  - The packet provider is user-mode libslirp with IPv4/IPv6 capability; BPF taps only this virtual segment and does not obtain host-NIC promiscuous access.
+- **Errno, levels and options** use the Amiga's (BSD) numbers on the board and are mapped to Linux's in the service. Human-readable errno/h_errno strings are provided by the guest library.
 
 ## 8. The board
 
@@ -108,34 +112,36 @@ HostSocket's block starts at the card's base:
 - registers at $0000 to $00FF;
 - a 16,128-byte transmit buffer at $0100;
 - a 16,384-byte receive buffer at $4000;
-- $8000 to $FFFF kept for the packet rings of the later SANA-II side.
+- $8000 to $FFFF remains reserved for a future higher-throughput packet-ring transport; the current SANA-II/BPF implementation uses the bounded HostSocket packet commands.
 
 The registers and commands are in `vendor/amigachrome-guest/common/protocol/achostsocket.h`. A command is synchronous: writing COMMAND runs it, and RESULT, ERRNO and RXLEN are set when the write returns. EVENT plus IRQ_ENABLE gives INT2. The runtime and the bridge talk over the existing request pipe as board 3, and over the input pipe with record 11.
 
 ## 9. Cradle
 
 - The hardware panel gains a **Network** switch and a **Host Wi-Fi control** switch. Both are off.
-- Switching Network on fits the card from the next reboot and installs `LIBS:bsdsocket.library`, `LIBS:acnetwork.library`, `DEVS:acnet.device`, ACNetControl and the native ACNetwork Tools command suite. `acwifi.device` is installed only when that backend is actually fitted. Existing third-party `bsdsocket.library` installations are detected as conflicts rather than silently overwritten.
+- Switching Network on fits the card from the next reboot and, for AmigaOS 3.x, installs `LIBS:bsdsocket.library`, `LIBS:acnetwork.library`, `DEVS:acnet.device`, `DEVS:acwifi.device`, ACNetControl and the native ACNetwork Tools suite from a hash-verified vendored payload. Existing third-party `bsdsocket.library` installations are detected as conflicts rather than silently overwritten.
+- The installer is transactional, updates ACFS metadata/protection records, rolls back partial writes, refuses path/symlink escape and only updates a stopped OS3 guest. AROS keeps its own stack.
 
 ## 10. Quality bar
 
-- **Host:** focused HostSocket qualification currently runs 29 tests successfully with 2 expected skips, covering policy, handles, POLL/events, DNS, ICMP/traceroute translation, state/control views and network-database lookups.
-- **Board:** board_test cases for the block's registers, buffers and INT2.
-- **Guest, under genuine AmigaOS 3.2.3:** core BSD qualification, ACTCPTools first-light and the Roadshow-shaped read-only probe are live-qualified on Instance-6. `ping`, `traceroute`, `arp`, `ifconfig`, `route`, `netstat`, `hostname`, `resolve` and `acnetctl` have working OS3 builds; the Roadshow read-only probe completed with 0 failures.
+- **Host:** the complete-stack HostSocket suite is 35/35, including sockets, DNS, ICMP/traceroute, native state/logging, Wi-Fi permission/control, SANA-II packet-provider commands and classic-BPF filtering/capture/injection.
+- **Cradle/install:** installer + hardware-model + HostSocket combined gate is 56/56; the transactional ACNet guest installer is 6/6 including foreign-stack refusal and injected rollback.
+- **Board:** board_test cases cover the card block's registers, buffers and INT2; the packet path adds bounded user-mode Ethernet rather than host raw-NIC access.
+- **Guest:** the complete stack cross-build is warning-clean with 46/46 core BSD vectors and 27 implemented Roadshow compatibility-tail vectors. Earlier socket/tools functionality is live-qualified on Instance-6; the newly completed modern/BPF/SANA-II/Wi-Fi pieces still require the consolidated live campaign.
+- **External compatibility:** the Roadshow NDK's AmigaOS libpcap 0.8.1 source cross-builds against ACNet BPF into a 140 KiB m68k archive.
 - **Conformance:** bsdsocktest (tbdye, 142 tests). The target is everything attempted, no unexpected failures, and every limit written down.
 - **Programs:** an FTP client, a browser, an IRC client, SimpleMail, and a long download.
 - **Never:** busy polling, a wait that can't be broken, or a library open that can hang.
 
 ## 11. Limits in version 1
 
-- IPv4 only. IPv6 is a separate future feature rather than a compatibility patch.
-- General raw sockets remain unavailable; only the constrained ICMP Echo and traceroute personalities are virtualised.
-- Programs that drive SANA-II directly still need a packet-oriented/SANA-II side of `acnet.device`.
-- Mutable Roadshow administration (route/interface/DNS mutation) remains guarded; the current compatibility layer is deliberately read-only.
-- `acwifi.device`, host Wi-Fi scan/join/leave and the ACNet event-ring/log backend are not yet fitted.
-- BPF/libpcap/tcpdump compatibility has not yet been implemented.
-- Instance-23 currently has the newer tools/CX binary, but its installed HostSocket/runtime remains older until the host branch is merged and deployed.
-- AROS 68k keeps its own stack. ACNet is OS 3.2.3 first.
+- The classic AmigaOS 3.2/Roadshow socket ABI is IPv4. The target NDK has no public `AF_INET6`/`sockaddr_in6` ABI, so ACNet does not invent one. The SANA-II/libslirp packet path already carries IPv6 traffic and reports IPv6 capability.
+- General unrestricted raw sockets remain unavailable; only the constrained ICMP Echo and traceroute personalities are virtualised.
+- Mutable Roadshow administration (route/interface/DNS mutation) remains guarded because Cradle/Linux owns host network configuration. Read-only state is implemented.
+- Wi-Fi join/forget is deliberately limited to known NetworkManager profiles; no password crosses the Amiga ABI.
+- Roadshow mbuf/global-data/server-private/IP-filter internals remain safe guards rather than dependencies of ACNet core.
+- The supplied tcpdump 3.8.1 source archive has an unrelated missing `rpc/pmap_prot.h`; its real AmigaOS libpcap dependency already builds against ACNet BPF.
+- AROS 68k keeps its own stack. ACNet is AmigaOS 3.2.3 first.
 
 ## 12. Relationship to earlier designs
 
@@ -144,22 +150,22 @@ The registers and commands are in `vendor/amigachrome-guest/common/protocol/acho
   - the 27 September ACNet v0.1 UDP-only stack;
   - the statement in the 27 September Network/Wi-Fi design that AmigaChrome would not supply bsdsocket.library;
   - that design's bridge-by-default rule (now off by default).
-- **Still valid:** the ACNetwork (6) and ACWifiNet (8) board work, for the later packet-level card.
+- **Superseded by the integrated card:** the earlier separate ACWifiNet/product-8 packet prototype supplied useful groundwork, but Wi-Fi control and SANA-II packet access now live on the integrated product-6 ACNet architecture.
 
 ## 13. Remaining work to drop-in release
 
-1. Merge the qualified guest branch `dropin/compat-control-20261003` and host branch `net/dropin-state-20261003` to their release integration points.
-2. Deploy only through the normal AmigaChrome deployment path, then restart a dedicated qualification guest and confirm the host/runtime protocol versions match.
-3. Re-run the consolidated OS 3.2.3 gate: core BSD qualification, HostSocket focused tests, ACTCPTools, Roadshow read-only probe and ACNetControl live telemetry/controls.
-4. Run the real-application compatibility matrix: FTP, browser, IRC, SimpleMail, long transfer and representative third-party software that expects Roadshow/AmiTCP-shaped behaviour.
-5. Run the broader bsdsock conformance suite and document every deliberate limitation.
-6. Finish packaging/install conflict handling so ACNet is a genuine one-switch drop-in without overwriting third-party networking.
-7. Only after the drop-in gate: decide priorities for Wi-Fi control, event logging, BPF/libpcap/tcpdump, mutable admin APIs, SANA-II and IPv6.
+1. Commit/merge the matching guest `feature/complete-stack-20261003` and host/runtime `net/complete-stack-20261003` branches.
+2. Deploy the matching HostSocket/runtime and hash-verified guest payload together; do not qualify a new guest library against an older provider protocol.
+3. Run the consolidated Instance-6 gate: core BSD qualification, modern compatibility probe, BPF probe, SANA-II probe, Wi-Fi device probe, ACTCPTools, Roadshow read-only probe and ACNetControl live telemetry/control.
+4. Qualify the one-switch Cradle installer on a disposable OS3 volume, including upgrade, foreign-stack conflict and ACFS metadata preservation.
+5. Run the real-application matrix: FTP, browser, IRC, SimpleMail, long transfer and representative Roadshow/AmiTCP software.
+6. Run the broader bsdsock conformance suite and record every deliberate compatibility boundary.
+7. Package tcpdump separately if desired; its current supplied source bundle is missing an RPC printer header, while the ACNet BPF/libpcap layer itself is built.
 
 ## 14. Open decisions / later lanes
 
-- Whether Wi-Fi may join networks the PC does not already know; version 1 should continue to avoid carrying passphrases through the guest unless explicitly designed.
-- When packet/SANA-II compatibility earns its cost from real software evidence.
-- Whether mutable route/interface/DNS administration should ever be exposed from the guest, rather than remaining host-owned.
-- Whether BPF/libpcap/tcpdump belongs in the first drop-in release or the following compatibility release.
-- IPv6 scope and guest ABI remain deliberately undefined.
+- Whether Wi-Fi may ever join an unknown host profile; version 1 deliberately carries no passphrase through the guest.
+- Whether mutable route/interface/DNS administration should ever be exposed from the guest rather than remaining host-owned.
+- Whether ACNet should define a future native IPv6 socket ABI for new software; this would be an ACNet extension, not a fabricated Roadshow ABI.
+- Whether the reserved upper card aperture should become a higher-throughput packet ring after the command-based SANA-II path is qualified.
+- Whether tcpdump itself should be packaged after repairing the incomplete upstream/NDK source bundle.
