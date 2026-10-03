@@ -1,5 +1,7 @@
 # ACNet drop-in compatibility current position
 
+> **Historical checkpoint — superseded later on 3 October 2026 by the complete-stack milestone.** For current architecture/API state read `docs/architecture/ACNET_STACK_AND_API_REFERENCE.md` and `docs/ACNET_DESIGN.md`.
+
 **Date:** 3 October 2026
 **Purpose:** restart capsule for the ACNet IPv4 drop-in compatibility lane.
 

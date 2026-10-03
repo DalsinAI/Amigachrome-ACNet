@@ -14,6 +14,21 @@ LONG wait_items(struct SocketBase *sb,ULONG *items,ULONG *revents,LONG n,const s
 LONG wait_ready(struct SocketBase *sb,LONG handle,ULONG events,const struct timeval *tv){ULONG items[2]={handle,events},rev=0;LONG r=wait_items(sb,items,&rev,1,(tv&&(tv->tv_secs||tv->tv_micro))?tv:NULL,0,NULL);if(r<=0)return r;return (LONG)rev;}
 LONG wait_event(struct SocketBase *sb){ULONG items[2]={0,0},rev=0;LONG r=wait_items(sb,items,&rev,0,NULL,0,NULL);return r<0?-1:0;}
 
+/* Wait after the caller has already armed the provider, preserving the classic
+ * arm -> poll -> sleep pattern without losing an event between poll and Wait().
+ * 1=provider event, 0=timeout, 2=extra signal, -1=interrupt/error. */
+LONG wait_armed_event(struct SocketBase *sb,const struct timeval *tv,ULONG extra,ULONG *got_extra)
+{
+ ULONG tmask=0,sigs;if(got_extra)*got_extra=0;
+ if(tv){tmask=timer_start(sb,tv);if(!tmask){prov_disarm(sb);return -1;}}
+ sigs=Wait(sb->provider_sigmask|tmask|extra|sb->sigintr);prov_disarm(sb);
+ if(tmask)timer_cancel(sb);
+ if(sigs&sb->sigintr)return fail(sb,AE_INTR);
+ if(sigs&extra){if(got_extra)*got_extra=sigs&extra;return 2;}
+ if(tmask&&(sigs&tmask))return 0;
+ return (sigs&sb->provider_sigmask)?1:0;
+}
+
 LONG bsd_WaitSelect(struct SocketBase *sb,LONG nfds,APTR rf,APTR wf,APTR ef,struct timeval *tv,ULONG *signals)
 {
  fd_set *r=(fd_set*)rf,*w=(fd_set*)wf,*e=(fd_set*)ef;ULONG items[FD_SETSIZE*2],rev[FD_SETSIZE],extra=signals?*signals:0,got=0;LONG map[FD_SETSIZE];UBYTE want[FD_SETSIZE];LONG n=0,fd,rc,ready=0;

@@ -11,42 +11,146 @@
     {
       "slot": 57,
       "name": "bpf_open",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "channel",
+          "d0"
+        ]
+      ]
     },
     {
       "slot": 58,
       "name": "bpf_close",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "channel",
+          "d0"
+        ]
+      ]
     },
     {
       "slot": 59,
       "name": "bpf_read",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "channel",
+          "d0"
+        ],
+        [
+          "APTR",
+          "buffer",
+          "a0"
+        ],
+        [
+          "LONG",
+          "len",
+          "d1"
+        ]
+      ]
     },
     {
       "slot": 60,
       "name": "bpf_write",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "channel",
+          "d0"
+        ],
+        [
+          "APTR",
+          "buffer",
+          "a0"
+        ],
+        [
+          "LONG",
+          "len",
+          "d1"
+        ]
+      ]
     },
     {
       "slot": 61,
       "name": "bpf_set_notify_mask",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "channel",
+          "d1"
+        ],
+        [
+          "ULONG",
+          "signal_mask",
+          "d0"
+        ]
+      ]
     },
     {
       "slot": 62,
       "name": "bpf_set_interrupt_mask",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "channel",
+          "d0"
+        ],
+        [
+          "ULONG",
+          "signal_mask",
+          "d1"
+        ]
+      ]
     },
     {
       "slot": 63,
       "name": "bpf_ioctl",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "channel",
+          "d0"
+        ],
+        [
+          "ULONG",
+          "command",
+          "d1"
+        ],
+        [
+          "APTR",
+          "buffer",
+          "a0"
+        ]
+      ]
     },
     {
       "slot": 64,
       "name": "bpf_data_waiting",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "channel",
+          "d0"
+        ]
+      ]
     },
     {
       "slot": 65,

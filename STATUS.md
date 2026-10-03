@@ -1,5 +1,34 @@
 # ACNet Status
 
+## 2026-10-03 - Complete-stack code milestone
+
+The specified AmigaOS 3.2.3 ACNet stack is now implemented in code on the complete-stack branches. The remaining release work is matching guest/host integration and live qualification, not invention of another TCP/IP core.
+
+New code since the drop-in checkpoint:
+
+- modern IPv4 compatibility APIs: re-entrant host lookups, addrinfo/nameinfo and inet conversion helpers;
+- bounded native event log and ACNetControl Log page;
+- `acwifi.device` plus asynchronous, permission-gated NetworkManager scan/status/known-profile control;
+- SANA-II packet facade on `acnet.device` using an unprivileged libslirp Ethernet provider;
+- Roadshow-compatible BPF channels, classic-BPF VM/filtering, capture, injection, timeouts and notification masks;
+- proper BSD errno/h_errno text;
+- hash-verified transactional Cradle guest installer with foreign-`bsdsocket.library` refusal and ACFS metadata updates;
+- self-contained 14-file production payload plus separate qualification probes.
+
+Build/test evidence:
+
+- 46/46 classic core vectors, zero core stubs;
+- 27 implemented Roadshow compatibility-tail vectors;
+- complete OS3 guest stack and ACTCPTools cross-build;
+- HostSocket complete-stack suite: 35/35;
+- installer + hardware + HostSocket combined gate: 56/56;
+- transactional installer suite: 6/6;
+- real Roadshow AmigaOS libpcap 0.8.1 source cross-built to a 140 KiB m68k archive against ACNet BPF.
+
+Packet-level IPv6 is available through the libslirp/SANA-II path. The classic OS3/Roadshow socket ABI remains IPv4 because the target NDK contains no public AF_INET6/sockaddr_in6 ABI.
+
+See `docs/architecture/ACNET_STACK_AND_API_REFERENCE.md` for the canonical component/API reference.
+
 ## 2026-10-03 - Drop-in IPv4 compatibility
 
 ACNet now has a public native control plane (`acnetwork.library`) plus a read-only
@@ -75,9 +104,9 @@ The original first-light build used a broader compatibility-shaped vector table.
 
 ## Next qualification targets
 
-1. Merge/deploy the matching guest and host drop-in branches as one protocol set.
-2. Re-run the consolidated Instance-6 qualification after deployment.
-3. Exercise real application compatibility across FTP, browser, IRC, SimpleMail, long transfers and other Roadshow/AmiTCP-shaped software.
-4. Run the broader bsdsock conformance suite and document deliberate limits.
-5. Finish Cradle packaging/conflict handling for a genuine one-switch drop-in.
-6. Defer Wi-Fi, event log, BPF/libpcap, mutable admin, SANA-II and IPv6 until the drop-in gate is secure.
+1. Commit/merge and deploy the matching complete-stack guest and host/runtime branches as one protocol set.
+2. Run the consolidated Instance-6 campaign, including modern compatibility, BPF, SANA-II, Wi-Fi, event-log and installer paths as well as the existing core/tool probes.
+3. Qualify the Cradle one-switch installer on a disposable OS3 volume before normal release deployment.
+4. Exercise real application compatibility across FTP, browser, IRC, SimpleMail, long transfers and other Roadshow/AmiTCP-shaped software.
+5. Run the broader bsdsock conformance suite and document deliberate limits.
+6. Decide later-policy items separately: mutable host administration, a native ACNet IPv6 socket ABI, high-throughput packet rings and tcpdump source-package repair.
