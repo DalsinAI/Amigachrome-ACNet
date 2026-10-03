@@ -11,15 +11,15 @@ Current qualified capabilities:
 - core BSD sockets: TCP, UDP, DNS, WaitSelect/non-blocking and constrained ICMP;
 - ACTCPTools: hostname, resolve, ping, traceroute, arp, ifconfig, route, netstat, acnetctl;
 - native ACNetwork views: status, interfaces, routes, neighbours, DNS and this-instance sockets;
-- ACNetControl: live status/connections, Refresh, soft online/offline and support report;
+- ACNetControl: live status/connections, Refresh, soft online/offline, public-BSD DNS/TCP diagnostics and support report;
 - Roadshow read-only APIs: routes/ARP, interfaces, DNS list and network/socket statistics;
-- `gethostid()` implemented from the guest-facing IPv4 interface;
-- logical core: 44 implemented application vectors, 2 honest core stubs;
+- `gethostid()`, `getnetbyname()` and `getnetbyaddr()` implemented;
+- logical core: all 46 application vectors implemented, 0 core stubs;
 - compatibility guard tail: 83 slots, 8 read-only implementations; all other slots remain guards.
 
 Qualification:
 
-- HostSocket focused suite: 28 tests run, OK, skipped=2;
+- HostSocket focused suite: 29 tests run, OK, skipped=2;
 - Roadshow-shaped OS 3.2.3 probe: PASS, 0 failures, RC 0;
 - live interface `acnet0`: IPv4, MTU 1500, 1 Gbit/s link, Ethernet identity;
 - normal route enumeration: 2 live routes;
@@ -75,8 +75,9 @@ The original first-light build used a broader compatibility-shaped vector table.
 
 ## Next qualification targets
 
-1. Real application compatibility across additional classic Amiga software.
-2. Complete the three remaining classic core stubs where useful.
-3. Finish ACNetControl on the stock OS 3.2.3 ReAction class set.
-4. Exercise UDP/non-blocking/WaitSelect paths under longer-running application workloads.
-5. Add optional legacy compatibility only where real application evidence requires it.
+1. Merge/deploy the matching guest and host drop-in branches as one protocol set.
+2. Re-run the consolidated Instance-6 qualification after deployment.
+3. Exercise real application compatibility across FTP, browser, IRC, SimpleMail, long transfers and other Roadshow/AmiTCP-shaped software.
+4. Run the broader bsdsock conformance suite and document deliberate limits.
+5. Finish Cradle packaging/conflict handling for a genuine one-switch drop-in.
+6. Defer Wi-Fi, event log, BPF/libpcap, mutable admin, SANA-II and IPv6 until the drop-in gate is secure.
