@@ -19,6 +19,7 @@ OUT=${1:-$GUEST/build/guest/os32/acnet}
 mkdir -p "$OUT"
 BARE="-m68020 -O2 -include sys/types.h -fomit-frame-pointer -fno-toplevel-reorder -fno-builtin -Wall -Wno-pointer-sign -nostartfiles -nostdlib"
 INC="-I$GUEST/common/protocol -I$HERE/include -I$GUEST/network/acnetwork/include"
+COMPAT_INC="-I$STOVE/ndk/SANA+RoadshowTCP-IP/include"
 
 "$CC" $BARE $INC -o "$OUT/acnet.device" "$HERE/device/acnet_device.c" "$GUEST/common/os3/string.c" -lgcc
 echo "$OUT/acnet.device ($(wc -c < "$OUT/acnet.device") bytes)"
@@ -27,9 +28,9 @@ STOVE="$STOVE" "$GUEST/network/acnetwork/build.sh" "$OUT"
 
 L="$HERE/library"
 # lib_base.c first: its start() must be the library's first code.
-LIB="$L/lib_base.c $L/lib_fd.c $L/lib_errno.c $L/lib_tags.c $L/lib_strings.c $L/lib_select.c $L/lib_conn.c $L/lib_io.c $L/lib_opt.c $L/lib_names.c $L/lib_inet.c $HERE/compat/roadshow/routes.c"
+LIB="$L/lib_base.c $L/lib_fd.c $L/lib_errno.c $L/lib_tags.c $L/lib_strings.c $L/lib_select.c $L/lib_conn.c $L/lib_io.c $L/lib_opt.c $L/lib_names.c $L/lib_inet.c $HERE/compat/roadshow/routes.c $HERE/compat/roadshow/state.c"
 python3 "$HERE/library/gen_vectors.py" "$ABI" "$OUT/bsdsocket_vectors.c" $LIB --guard "$GUARD"
-"$CC" $BARE $INC -I"$HERE/library" -I"$OUT" -o "$OUT/bsdsocket.library" \
+"$CC" $BARE $INC $COMPAT_INC -I"$HERE/library" -I"$OUT" -o "$OUT/bsdsocket.library" \
     $LIB "$HERE/library/provider_acnetwork.c" "$OUT/bsdsocket_vectors.c" "$GUEST/common/os3/string.c" -lgcc
 echo "$OUT/bsdsocket.library ($(wc -c < "$OUT/bsdsocket.library") bytes)"
 
@@ -41,6 +42,12 @@ fi
 if [ -f "$HERE/tests/bsdqual.c" ]; then
     "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul -o "$OUT/bsdqual" "$HERE/tests/bsdqual.c"
     echo "$OUT/bsdqual ($(wc -c < "$OUT/bsdqual") bytes)"
+fi
+
+if [ -f "$HERE/tests/roadshow_readonly_probe.c" ]; then
+    "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul \
+        -o "$OUT/roadshow-readonly-probe" "$HERE/tests/roadshow_readonly_probe.c"
+    echo "$OUT/roadshow-readonly-probe ($(wc -c < "$OUT/roadshow-readonly-probe") bytes)"
 fi
 
 if [ -f "$HERE/control/acnetcontrol.c" ]; then

@@ -42,7 +42,10 @@ static LONG one_tag(struct SocketBase *sb, struct TagItem *ti)
     case ACSBTC_ERRNOWORDPTR: if (!set) return -1; sb->errno_ptr = (APTR)v; sb->errno_size = 2; return 0;
     case ACSBTC_ERRNOLONGPTR: if (!set) return -1; sb->errno_ptr = (APTR)v; sb->errno_size = 4; return 0;
     case ACSBTC_HERRNOLONGPTR: if (!set) return -1; sb->herrno_ptr = (LONG *)v; return 0;
-    case ACSBTC_HAVE_ROUTING_API: if (set) return -1; GIVE(1);  /* read-only GetRouteInfo compatibility */
+    case ACSBTC_HAVE_ROUTING_API: if (set) return -1; GIVE(1);  /* read-only compatibility */
+    case ACSBTC_HAVE_INTERFACE_API: if (set) return -1; GIVE(1);
+    case ACSBTC_HAVE_STATUS_API: if (set) return -1; GIVE(1);
+    case ACSBTC_HAVE_DNS_API: if (set) return -1; GIVE(1);
     case ACSBTC_ERRNOSTRPTR: if (set) return -1; GIVE(errno_string((LONG)*where));
     case ACSBTC_HERRNOSTRPTR: if (set) return -1; GIVE(herrno_string((LONG)*where));
     case ACSBTC_LOGSTAT: case ACSBTC_LOGTAGPTR: case ACSBTC_LOGFACILITY: case ACSBTC_LOGMASK:
