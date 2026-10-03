@@ -25,6 +25,12 @@
 #define ACNETWORK_CMD_WIFI_FORGET  0x44
 #define ACNETWORK_CMD_WIFI_ANSWER  0x45
 #define ACNETWORK_CMD_WIFI_CANCEL  0x46
+#define ACNETWORK_CMD_PACKET_INFO    0x50
+#define ACNETWORK_CMD_PACKET_ONLINE  0x51
+#define ACNETWORK_CMD_PACKET_OFFLINE 0x52
+#define ACNETWORK_CMD_PACKET_SEND    0x53
+#define ACNETWORK_CMD_PACKET_RECV    0x54
+#define ACNETWORK_CMD_PACKET_STATS   0x55
 
 #define ACNETWORK_NEIGH_VALID      0x01
 #define ACNETWORK_SOCKET_OPEN      0
@@ -129,6 +135,33 @@ struct ACWiFiNetwork {
     UBYTE reserved1[12];
 };
 typedef char ACWiFiNetwork_size_must_be_64[(sizeof(struct ACWiFiNetwork) == 64) ? 1 : -1];
+
+#define ACPACKET_FLAG_ONLINE   0x01
+#define ACPACKET_FLAG_IPV4     0x02
+#define ACPACKET_FLAG_IPV6     0x04
+#define ACPACKET_FLAG_USERMODE 0x08
+
+struct ACPacketInfo {
+    UBYTE mac[6];
+    UBYTE reserved0[2];
+    ULONG mtu;
+    ULONG bps;
+    ULONG flags;
+    ULONG rx_queued;
+    ULONG tx_packets;
+    ULONG rx_packets;
+};
+typedef char ACPacketInfo_size_must_be_32[(sizeof(struct ACPacketInfo) == 32) ? 1 : -1];
+
+struct ACPacketStats {
+    ULONG tx_packets;
+    ULONG rx_packets;
+    ULONG tx_bytes;
+    ULONG rx_bytes;
+    ULONG tx_dropped;
+    ULONG rx_dropped;
+};
+typedef char ACPacketStats_size_must_be_24[(sizeof(struct ACPacketStats) == 24) ? 1 : -1];
 
 struct ACNetworkRequest {
     ULONG command;
