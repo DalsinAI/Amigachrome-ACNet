@@ -1,0 +1,76 @@
+ACNet Roadshow read-only compatibility qualification
+
+Date: 2026-10-03
+Guest: Instance-6 (AmigaOS 3.2.3 ACNet qualification guest)
+
+Purpose:
+Exercise ACNet through the public Roadshow-shaped bsdsocket.library extension ABI.
+The probe contains no private ACNet or HostSocket calls.
+
+Compatibility exposed:
+- SBTC_HAVE_ROUTING_API
+- SBTC_HAVE_INTERFACE_API
+- SBTC_HAVE_STATUS_API
+- SBTC_HAVE_DNS_API
+- gethostid()
+- GetRouteInfo()/FreeRouteInfo() for ARP and normal IPv4 routes
+- Obtain/ReleaseInterfaceList()
+- QueryInterfaceTagList() read-only queries
+- GetNetworkStatistics()
+- Obtain/ReleaseDomainNameServerList()
+
+Guest-facing interface identity:
+- name: acnet0
+- device: acnet.device
+- hardware: Ethernet
+- mutable interface/DNS/route administration remains guarded.
+
+Live probe result:
+ACNet Roadshow read-only compatibility probe
+capability query: PASS
+routing API advertised: PASS
+interface API advertised: PASS
+status API advertised: PASS
+DNS API advertised: PASS
+gethostid: PASS
+hostid: 192.168.0.195
+ObtainInterfaceList: PASS
+interfaces: 1
+interface count: PASS
+QueryInterfaceTagList: PASS
+interface acnet0 device=acnet.device addr=192.168.0.195 mtu=1500 bps=1000000000 hwbits=48 state=3
+GetRouteInfo routes: PASS
+routes: 2
+route count: PASS
+ObtainDomainNameServerList: PASS
+dns servers: 1
+dns: 127.0.0.53
+TCP socket status API: PASS
+UDP socket status API: PASS
+TCP statistics API: PASS
+status sizes: tcp_sockets=0 udp_sockets=0 tcp=208
+RESULT: PASS (0 failures)
+Probe return code: 0
+
+Build state at qualification:
+- bsdsocket.library: 25,752 bytes
+- logical core: 44 implemented application vectors, 2 honest core stubs
+- compatibility guard tail: 83 physical slots, 8 implemented read-only vectors
+- ACNetControl: 15,868 bytes
+- all builds warning-free.
+
+Semantics:
+- interface MAC/MTU/address/netmask/link/state and byte counters map to ACNetwork data.
+- Roadshow packet/error/request statistics not maintained by HostSocket return truthful zero values.
+- normal route enumeration maps the ACNetwork IPv4 route view.
+- ARP continues to use the independently-qualified RTF_LLINFO route view.
+- DNS server nodes are synthesized from ACNetwork resolver enumeration.
+- TCP/UDP socket status maps only this ACNet instance's HostSocket handles.
+
+Guest hygiene:
+- User-Startup restored to SHA-256 37876fc06a77d8b49199a608ff73749bb2e81ae65520d9df5235439c90c3ae4d.
+- bsdsocket.library restored to SHA-256 37fd4cb08b3654e10a93af4ba9daeebe359026d46c8e4f40285b9500d94e8d87.
+- acnetwork.library and acnet.device were not replaced for this probe.
+- temporary probe/output files removed.
+- Instance-6 host/runtime stopped; ports 8798 and 18798 down.
+- no general-purpose AmigaChrome instance was modified.

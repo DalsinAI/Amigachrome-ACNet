@@ -86,6 +86,36 @@
                                             rx: name\0 then count x 4-byte address; ERRNO holds h_errno on failure */
 #define ACHS_CMD_SERVICE          0x33   /* port (0: by name), max; tx: name\0proto\0 -> port; rx: name\0 */
 #define ACHS_CMD_HOSTNAME         0x34   /* rx: the instance's host name\0 */
+#define ACHS_CMD_NEIGHBOURS       0x35   /* a0=max records; rx: ACNetworkNeighbour records */
+#define ACHS_CMD_INTERFACES       0x36   /* a0=max records; rx: ACNetworkInterface records */
+#define ACHS_CMD_ROUTES           0x37   /* a0=max records; rx: ACNetworkRoute records */
+#define ACHS_CMD_SOCKETS          0x38   /* a0=max records; rx: ACNetworkSocket records */
+#define ACHS_CMD_SET_ONLINE       0x39   /* a0=0 soft-offline, 1 online; -> state */
+#define ACHS_CMD_DNS_SERVERS      0x3a   /* a0=max addresses; rx: packed IPv4 addresses */
+#define ACHS_CMD_NET_BY_NAME      0x3b   /* tx=name\0; rx=canonical\0 + IPv4 network */
+#define ACHS_CMD_NET_BY_ADDR      0x3c   /* a0=host-order IPv4 network; same rx */
+#define ACHS_CMD_LOG              0x3d   /* a0=sequence already seen, a1=max records; rx: ACNetworkLogEntry records */
+#define ACHS_CMD_WIFI_SCAN        0x40   /* -> async ticket; answer: ACWiFiNetwork records */
+#define ACHS_CMD_WIFI_STATUS      0x41   /* -> async ticket; answer: active ACWiFiNetwork, or 0 records */
+#define ACHS_CMD_WIFI_JOIN        0x42   /* tx=known SSID\0 -> async ticket */
+#define ACHS_CMD_WIFI_LEAVE       0x43   /* -> async ticket */
+#define ACHS_CMD_WIFI_FORGET      0x44   /* tx=known SSID\0 -> async ticket */
+#define ACHS_CMD_WIFI_ANSWER      0x45   /* a0=ticket -> result/rx, EINPROGRESS until done */
+#define ACHS_CMD_WIFI_CANCEL      0x46   /* a0=ticket; forget/cancel outstanding job */
+#define ACHS_CMD_PACKET_INFO      0x50   /* rx: ACPacketInfo */
+#define ACHS_CMD_PACKET_ONLINE    0x51   /* a0: flags; start user-mode Ethernet provider */
+#define ACHS_CMD_PACKET_OFFLINE   0x52   /* stop packet provider */
+#define ACHS_CMD_PACKET_SEND      0x53   /* tx: raw Ethernet frame -> bytes accepted */
+#define ACHS_CMD_PACKET_RECV      0x54   /* a0=max bytes -> frame, EAGAIN when empty */
+#define ACHS_CMD_PACKET_STATS     0x55   /* rx: ACPacketStats */
+#define ACHS_CMD_BPF_OPEN         0x60   /* a0=channel or -1 -> handle */
+#define ACHS_CMD_BPF_CLOSE        0x61   /* a0=handle */
+#define ACHS_CMD_BPF_READ         0x62   /* a0=handle, a1=max bytes -> packed BPF records */
+#define ACHS_CMD_BPF_WRITE        0x63   /* a0=handle; tx=raw Ethernet frame */
+#define ACHS_CMD_BPF_SETF         0x64   /* a0=handle, a1=instruction count; tx=8-byte BPF instructions */
+#define ACHS_CMD_BPF_FLUSH        0x65   /* a0=handle */
+#define ACHS_CMD_BPF_ATTACH       0x66   /* a0=handle; attach to ACNet Ethernet */
+#define ACHS_CMD_BPF_STATUS       0x67   /* a0=handle; rx: queued bytes, received, dropped */
 
 /* POLL events (poll(2)'s values). */
 #define ACHS_POLLIN               0x0001
