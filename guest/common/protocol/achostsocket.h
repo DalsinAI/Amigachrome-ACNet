@@ -87,6 +87,11 @@
 #define ACHS_CMD_SERVICE          0x33   /* port (0: by name), max; tx: name\0proto\0 -> port; rx: name\0 */
 #define ACHS_CMD_HOSTNAME         0x34   /* rx: the instance's host name\0 */
 #define ACHS_CMD_NEIGHBOURS       0x35   /* a0=max records; rx: ACNetworkNeighbour records */
+#define ACHS_CMD_INTERFACES       0x36   /* a0=max records; rx: ACNetworkInterface records */
+#define ACHS_CMD_ROUTES           0x37   /* a0=max records; rx: ACNetworkRoute records */
+#define ACHS_CMD_SOCKETS          0x38   /* a0=max records; rx: ACNetworkSocket records */
+#define ACHS_CMD_SET_ONLINE       0x39   /* a0=0 soft-offline, 1 online; -> state */
+#define ACHS_CMD_DNS_SERVERS      0x3a   /* a0=max addresses; rx: packed IPv4 addresses */
 
 /* POLL events (poll(2)'s values). */
 #define ACHS_POLLIN               0x0001

@@ -4,11 +4,15 @@ ACTCPTools is the classic-Amiga command-line tool set used to qualify ACNet.
 
 ## Contract
 
-The tools are ordinary AmigaOS programs. They use the published `bsdsocket.library` API only:
+The application-compatibility tools are ordinary AmigaOS programs using the published `bsdsocket.library` API:
 
-`ACTCPTools -> bsdsocket.library -> acnetwork.library -> acnet.device -> ACNet card -> Linux HostSocket`
+`hostname/resolve/ping/traceroute/arp -> bsdsocket.library -> acnetwork.library -> acnet.device -> ACNet card -> Linux HostSocket`
 
-They do not call HostSocket, ACNet private vectors, or AmigaChrome host APIs directly.
+The ACNet-native administration tools use the public `acnetwork.library` API directly:
+
+`ifconfig/route/netstat/acnetctl -> acnetwork.library -> acnet.device -> ACNet card -> Linux HostSocket`
+
+No ACTCPTool calls HostSocket, ACNet private device vectors, or AmigaChrome host APIs directly.
 
 ## Current port status
 
@@ -19,6 +23,10 @@ They do not call HostSocket, ACNet private vectors, or AmigaChrome host APIs dir
 | `ping` | PASS | PASS | End-to-end through ACNet's constrained ICMP compatibility path. |
 | `traceroute` | PASS | PASS | Raw-UDP guest probes are translated through Linux UDP/error-queue ICMP. |
 | `arp` | PASS | PASS (read-only) | `arp -a -n` uses Roadshow `GetRouteInfo()` compatibility over ACNet neighbour enumeration. |
+| `ifconfig` | PASS | PASS (read-only) | Native ACNet interface/address/link/counter view. |
+| `route` | PASS | PASS (read-only) | Native ACNet IPv4 route view. |
+| `netstat` | PASS | PASS (read-only) | Native ACNet state/counters and this-instance socket inventory. |
+| `acnetctl` | PASS | PASS | Native status and soft online/offline control; Cradle remains authoritative. |
 
 All binaries target 68020 and AmigaOS 3.2.3.
 ## Building

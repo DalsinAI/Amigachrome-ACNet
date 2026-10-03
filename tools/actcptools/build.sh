@@ -10,7 +10,7 @@ fi
 
 CC="$STOVE/prefix/bin/m68k-amigaos-gcc"
 OUT=${1:-"$HERE/build"}
-CFLAGS="-m68020 -O2 -Wall -Wno-pointer-sign -noixemul"
+CFLAGS="-m68020 -O2 -Wall -Wno-pointer-sign -noixemul -I$HERE/../../guest/network/acnetwork/include"
 mkdir -p "$OUT"
 
 build_one() {
@@ -24,5 +24,9 @@ build_one resolve
 build_one ping
 build_one traceroute
 build_one arp
+build_one ifconfig
+build_one route
+build_one netstat
+build_one acnetctl
 
 echo "ACTCPTools build complete."
