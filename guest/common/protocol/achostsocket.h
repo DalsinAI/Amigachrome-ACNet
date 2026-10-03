@@ -94,6 +94,7 @@
 #define ACHS_CMD_DNS_SERVERS      0x3a   /* a0=max addresses; rx: packed IPv4 addresses */
 #define ACHS_CMD_NET_BY_NAME      0x3b   /* tx=name\0; rx=canonical\0 + IPv4 network */
 #define ACHS_CMD_NET_BY_ADDR      0x3c   /* a0=host-order IPv4 network; same rx */
+#define ACHS_CMD_LOG              0x3d   /* a0=sequence already seen, a1=max records; rx: ACNetworkLogEntry records */
 
 /* POLL events (poll(2)'s values). */
 #define ACHS_POLLIN               0x0001

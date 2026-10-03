@@ -17,6 +17,7 @@
 #define ACNETWORK_CMD_SOCKETS      0x38
 #define ACNETWORK_CMD_SET_ONLINE   0x39
 #define ACNETWORK_CMD_DNS_SERVERS  0x3a
+#define ACNETWORK_CMD_LOG          0x3d
 
 #define ACNETWORK_NEIGH_VALID      0x01
 #define ACNETWORK_SOCKET_OPEN      0
@@ -86,6 +87,18 @@ struct ACNetworkSocket {
     char label[16];
 };
 typedef char ACNetworkSocket_size_must_be_48[(sizeof(struct ACNetworkSocket) == 48) ? 1 : -1];
+
+#define ACNETWORK_LOG_INFO  1
+#define ACNETWORK_LOG_WARN  2
+#define ACNETWORK_LOG_ERROR 3
+
+struct ACNetworkLogEntry {
+    ULONG sequence;
+    ULONG seconds;
+    ULONG level;
+    char text[84];
+};
+typedef char ACNetworkLogEntry_size_must_be_96[(sizeof(struct ACNetworkLogEntry) == 96) ? 1 : -1];
 
 struct ACNetworkRequest {
     ULONG command;
