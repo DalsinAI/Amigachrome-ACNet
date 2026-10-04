@@ -80,6 +80,7 @@ fi
 # auto-open stubs.
 if [ -f "$HERE/control/acnetcontrol_gt.c" ]; then
     "$CC" -m68000 -O2 -fno-common -Wall -Wno-pointer-sign -noixemul -I"$HERE/include" \
+        -I"$GUEST/network/acnetwork/include" -I"$GUEST/network/acwifi/include" \
         -o "$OUT/OpenSocketControl" "$HERE/control/acnetcontrol_gt.c" "$HERE/control/acnetcontrol_core.c" -lamiga
     echo "$OUT/OpenSocketControl ($(wc -c < "$OUT/OpenSocketControl") bytes)"
 fi
