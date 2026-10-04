@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: BSD-3-Clause */
+/* SPDX-License-Identifier: MIT */
 /* See acnet_stack.h. */
 #include "acnet_stack.h"
 #include <exec/types.h>

@@ -1,7 +1,7 @@
 /* tftp: a file to or from a TFTP server (binary, 512-byte blocks).
  *   tftp host get remote-file [local-file]
  *   tftp host put local-file [remote-file]
- * OpenSocket ACTCPTools. BSD-3-Clause. */
+ * OpenSocket ACTCPTools. MIT. */
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <proto/exec.h>

@@ -1,4 +1,4 @@
-/* ACNet bsdsocket.library: socket lifecycle and connection calls. BSD-3-Clause. */
+/* ACNet bsdsocket.library: socket lifecycle and connection calls. MIT. */
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <sys/socket.h>

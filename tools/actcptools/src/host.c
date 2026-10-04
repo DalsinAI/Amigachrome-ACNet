@@ -1,7 +1,7 @@
 /* host: look a name up, or an address back up to its name.
  *   host aminet.net
  *   host 1.2.3.4
- * OpenSocket ACTCPTools. BSD-3-Clause. */
+ * OpenSocket ACTCPTools. MIT. */
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <sys/types.h>

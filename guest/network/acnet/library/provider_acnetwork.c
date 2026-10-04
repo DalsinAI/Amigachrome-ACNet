@@ -1,5 +1,5 @@
 /* bsdsocket.library provider backed by acnetwork.library.
- * BSD-3-Clause. */
+ * MIT. */
 #include <exec/types.h>
 #include <proto/exec.h>
 

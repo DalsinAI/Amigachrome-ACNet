@@ -1,5 +1,5 @@
 /* ACNet bsdsocket.library: errno and h_errno text for SocketBaseTagList.
- * BSD-3-Clause. */
+ * MIT. */
 #include <exec/types.h>
 #include "lib_internal.h"
 

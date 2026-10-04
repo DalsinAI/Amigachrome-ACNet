@@ -3,7 +3,7 @@
  * Ctrl-] closes the connection; Ctrl-C goes to the other machine. The
  * terminal type is VT100 (the Amiga's console speaks most of it); the
  * cursor keys are sent as VT100 keys, Backspace as DEL.
- * OpenSocket ACTCPTools. BSD-3-Clause. */
+ * OpenSocket ACTCPTools. MIT. */
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <proto/exec.h>

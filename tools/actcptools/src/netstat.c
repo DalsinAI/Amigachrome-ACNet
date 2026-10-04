@@ -1,4 +1,4 @@
-/* ACTCPTools netstat - ACNet socket/status view. BSD-3-Clause. */
+/* ACTCPTools netstat - ACNet socket/status view. MIT. */
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <proto/exec.h>

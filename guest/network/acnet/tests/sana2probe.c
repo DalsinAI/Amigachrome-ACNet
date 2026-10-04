@@ -1,4 +1,4 @@
-/* ACNet SANA-II live probe for AmigaOS 3.2.3. BSD-3-Clause. */
+/* ACNet SANA-II live probe for AmigaOS 3.2.3. MIT. */
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/io.h>

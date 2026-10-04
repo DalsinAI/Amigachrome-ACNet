@@ -1,4 +1,4 @@
-/* ostool: see ostool.h. BSD-3-Clause. */
+/* ostool: see ostool.h. MIT. */
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <dos/dos.h>

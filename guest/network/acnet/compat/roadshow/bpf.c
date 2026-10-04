@@ -1,6 +1,6 @@
 /* ACNet Roadshow-compatible Berkeley Packet Filter facade.
  * BPF channels are per bsdsocket.library opener; capture/filtering lives in
- * HostSocket's unprivileged virtual Ethernet provider. BSD-3-Clause. */
+ * HostSocket's unprivileged virtual Ethernet provider. MIT. */
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <proto/exec.h>

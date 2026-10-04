@@ -1,4 +1,4 @@
-/* ACTCPTools ifconfig - read-only ACNet interface view. BSD-3-Clause. */
+/* ACTCPTools ifconfig - read-only ACNet interface view. MIT. */
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <proto/exec.h>

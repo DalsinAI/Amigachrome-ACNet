@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: BSD-3-Clause */
+/* SPDX-License-Identifier: MIT */
 #ifndef ACNET_STACK_H
 #define ACNET_STACK_H
 /* Runs a program's body on a stack of at least `bytes`, swapped in with

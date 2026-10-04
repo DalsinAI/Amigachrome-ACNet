@@ -1,7 +1,7 @@
 /* ACNet's HostSocket provider: the Amiga's sockets carried out by the Linux
  * host, through acnet.device and the ACNet card. Each opener opens the
  * device and registers one waiter (its task and a signal of its own); the
- * device's interrupt signals it while armed. BSD-3-Clause. */
+ * device's interrupt signals it while armed. MIT. */
 #include <exec/memory.h>
 #include <exec/errors.h>
 #include <proto/exec.h>

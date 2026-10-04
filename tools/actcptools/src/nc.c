@@ -6,7 +6,7 @@
  *   nc -z host port[-port]     which ports answer
  *   -w seconds                 how long a connect may take (10)
  * Ctrl-C ends it.
- * OpenSocket ACTCPTools. BSD-3-Clause. */
+ * OpenSocket ACTCPTools. MIT. */
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <proto/exec.h>

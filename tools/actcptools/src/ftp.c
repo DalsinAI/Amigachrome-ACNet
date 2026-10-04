@@ -4,7 +4,7 @@
  * rename, size, binary, ascii, quote, close, quit (help lists them).
  * Transfers are binary unless "ascii" is given; ascii turns CR LF into LF
  * coming in and LF into CR LF going out.
- * OpenSocket ACTCPTools. BSD-3-Clause. */
+ * OpenSocket ACTCPTools. MIT. */
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <proto/exec.h>

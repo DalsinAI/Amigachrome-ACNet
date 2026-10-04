@@ -1,7 +1,7 @@
 /*
  * ACNet bsdsocket.library qualification harness.
  * Runs inside AmigaOS 3.2.3 against the published bsdsocket ABI.
- * BSD-3-Clause.
+ * MIT.
  */
 #include <exec/types.h>
 #include <exec/libraries.h>

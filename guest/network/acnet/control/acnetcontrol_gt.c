@@ -14,7 +14,7 @@
  * Keys: Tab and Shift-Tab change page, 1 to 5 pick one, Esc hides, and the
  * underlined letters press buttons.
  *
- * BSD-3-Clause.
+ * MIT.
  */
 #include <exec/types.h>
 #include <exec/libraries.h>

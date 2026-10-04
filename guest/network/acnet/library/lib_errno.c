@@ -1,5 +1,5 @@
 /* ACNet bsdsocket.library: errno and h_errno, and where an opener wants
- * them. BSD-3-Clause. */
+ * them. MIT. */
 #include <exec/types.h>
 #include <proto/exec.h>
 

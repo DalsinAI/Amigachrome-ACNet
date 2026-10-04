@@ -1,7 +1,7 @@
 /* finger: what a finger server says about a user, or about its users.
  *   finger user@host
  *   finger @host
- * OpenSocket ACTCPTools. BSD-3-Clause. */
+ * OpenSocket ACTCPTools. MIT. */
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <sys/types.h>

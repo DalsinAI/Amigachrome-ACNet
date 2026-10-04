@@ -1,6 +1,6 @@
 /* acwifi.device: ACNet Wi-Fi control for AmigaOS 3.x.
  * Association remains host-owned. The device is a client of acnetwork.library;
- * it never touches the product-6 ACNet card directly. BSD-3-Clause. */
+ * it never touches the product-6 ACNet card directly. MIT. */
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <exec/devices.h>

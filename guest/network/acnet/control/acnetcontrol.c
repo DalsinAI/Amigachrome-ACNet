@@ -12,7 +12,7 @@
  * operation does not depend on this program; closing the window merely hides
  * the Commodity.
  *
- * BSD-3-Clause.
+ * MIT.
  */
 #include <exec/types.h>
 #include <exec/io.h>

@@ -1,4 +1,4 @@
-/* ACNet Roadshow BPF end-to-end probe. BSD-3-Clause. */
+/* ACNet Roadshow BPF end-to-end probe. MIT. */
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <proto/exec.h>

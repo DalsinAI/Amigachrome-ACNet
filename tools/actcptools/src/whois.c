@@ -2,7 +2,7 @@
  *   whois aminet.net
  *   whois -h whois.example.net query
  * Without -h it asks IANA, then the server IANA's answer refers to.
- * OpenSocket ACTCPTools. BSD-3-Clause. */
+ * OpenSocket ACTCPTools. MIT. */
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <sys/types.h>

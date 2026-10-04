@@ -8,7 +8,7 @@
  * diagnostics. Each is opened only when there, so the Commodity also runs
  * on an Amiga without the card and says so.
  *
- * BSD-3-Clause.
+ * MIT.
  */
 #include <exec/types.h>
 #include <exec/io.h>
