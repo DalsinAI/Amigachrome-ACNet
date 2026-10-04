@@ -4,7 +4,7 @@
 **Date:** 3 October 2026
 **Guest branch:** `feature/complete-stack-20261003`
 **Host/runtime branch:** `net/complete-stack-20261003`
-**Created by:** Dale Kirkwood, in collaboration with Thufir Hawat.
+**Created by:** Dalsin Limited, in collaboration with Thufir Hawat.
 
 ## 1. Scope
 

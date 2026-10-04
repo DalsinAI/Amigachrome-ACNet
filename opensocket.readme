@@ -1,6 +1,6 @@
 Short:        Free bsdsocket.library and net tools
-Uploader:     (Dale fills this in at upload time)
-Author:       Dale Kirkwood (Dalsin Limited)
+Uploader:     (We fill this in at upload time)
+Author:       Dalsin Limited
 Type:         comm/tcp
 Version:      1.0
 Requires:     AmigaOS 3.2.3, an AmigaChrome machine (see below)
