@@ -11,9 +11,9 @@ mkdir -p "$OUT"
 BARE="-m68020 -O2 -fomit-frame-pointer -fno-toplevel-reorder -fno-builtin -Wall -Wno-pointer-sign -nostartfiles -nostdlib"
 INC="-I$GUEST/network/acnetwork/include -I$HERE/include"
 
-"$CC" $BARE $INC -o "$OUT/acwifi.device" \
+"$CC" $BARE $INC -o "$OUT/opensocketwifi.device" \
     "$HERE/device/acwifi_device.c" -lgcc
-echo "$OUT/acwifi.device ($(wc -c < "$OUT/acwifi.device") bytes)"
+echo "$OUT/opensocketwifi.device ($(wc -c < "$OUT/opensocketwifi.device") bytes)"
 
 if [ -f "$HERE/tests/acwifitest.c" ]; then
     "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul $INC \

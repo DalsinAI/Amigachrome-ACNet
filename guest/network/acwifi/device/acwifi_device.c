@@ -30,9 +30,9 @@ struct ExecBase *SysBase;
 int start(void) { return -1; }
 
 static const char dev_name[] = ACWIFI_DEVICE_NAME;
-static const char dev_id[] = "acwifi.device 1.0 (3.10.2026) AmigaChrome ACNet\r\n";
+static const char dev_id[] = "opensocketwifi.device 1.0 (4.10.2026) OpenSocket (AmigaChrome)\r\n";
 static const char ver[] __attribute__((used)) =
-    "$VER: acwifi.device 1.0 (3.10.2026) AmigaChrome ACNet";
+    "$VER: opensocketwifi.device 1.0 (4.10.2026) OpenSocket (AmigaChrome)";
 static LONG net_call(struct Library *lib, struct ACNetworkRequest *request)
 {
     register struct ACNetworkRequest *a0 __asm("a0") = request;

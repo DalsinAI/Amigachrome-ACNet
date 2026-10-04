@@ -17,8 +17,8 @@ struct ExecBase *SysBase;
 int start(void) { return -1; }
 
 static const char lib_name[] = ACNETWORK_LIBRARY_NAME;
-static const char lib_id[] = "acnetwork.library 1.0 (2.10.2026) AmigaChrome ACNet\r\n";
-static const char lib_ver[] __attribute__((used)) = "$VER: acnetwork.library 1.0 (2.10.2026) AmigaChrome ACNet";
+static const char lib_id[] = "opensocket.library 1.0 (4.10.2026) OpenSocket (AmigaChrome)\r\n";
+static const char lib_ver[] __attribute__((used)) = "$VER: opensocket.library 1.0 (4.10.2026) OpenSocket (AmigaChrome)";
 
 static inline LONG dev_call(struct Library *dev, struct ACNCall *call)
 {
@@ -51,7 +51,7 @@ static LONG session_open(struct ACNetworkBase *base)
 {
     base->dev_io = AllocMem(sizeof(struct IOStdReq), MEMF_PUBLIC | MEMF_CLEAR);
     if (!base->dev_io) return ENOMEM;
-    if (OpenDevice((STRPTR)ACNET_DEVICE_NAME, 0, (struct IORequest *)base->dev_io, 0)) return ENETDOWN;
+    if (OPENSOCKET_OPEN_DEVICE(base->dev_io)) return ENETDOWN;
     base->dev = (struct Library *)base->dev_io->io_Device;
     base->sigbit = AllocSignal(-1);
     if (base->sigbit < 0) return ENOMEM;

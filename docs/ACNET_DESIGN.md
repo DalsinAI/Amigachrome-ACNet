@@ -1,5 +1,7 @@
 # ACNet: networking for AmigaOS 3.2.3 on AmigaChrome
 
+> **Renamed 4 October 2026.** ACNet is now OpenSocket: `acnet.device` is `DEVS:Networks/opensocket.device`, `acnetwork.library` is `opensocket.library`, `acwifi.device` is `opensocketwifi.device`, ACNetControlGT is OpenSocketControl (the ReAction version is retired), `acnetctl` is `C:OpenSocket`, the tools are in `SYS:Tools/OpenSocket/` and the interface is `opensocket0`. The current design is `docs/architecture/OPENSOCKET_DESIGN.md` in DalsinAI/amigachrome. The entries below keep the names of their time.
+
 **Status:** Complete-stack code built; consolidated live qualification pending · **Date:** 3 October 2026 · **Guest branch:** `feature/complete-stack-20261003` · **Host branch:** `net/complete-stack-20261003`
 **Created by** Dale Kirkwood, in collaboration with Thufir Hawat.
 

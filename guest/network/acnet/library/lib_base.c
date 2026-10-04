@@ -18,8 +18,8 @@ struct ExecBase *SysBase;
 int start(void) { return -1; }
 
 static const char lib_name[] = "bsdsocket.library";
-static const char lib_id[] = "bsdsocket.library 4.1 (1.10.2026) ACNet (AmigaChrome)\r\n";
-static const char lib_ver[] __attribute__((used)) = "$VER: bsdsocket.library 4.1 (1.10.2026) ACNet (AmigaChrome)";
+static const char lib_id[] = "bsdsocket.library 4.1 (4.10.2026) OpenSocket (AmigaChrome)\r\n";
+static const char lib_ver[] __attribute__((used)) = "$VER: bsdsocket.library 4.1 (4.10.2026) OpenSocket (AmigaChrome)";
 
 extern const APTR acnet_vectors[];
 

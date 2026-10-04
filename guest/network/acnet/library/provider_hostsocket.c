@@ -32,7 +32,7 @@ LONG prov_open(struct SocketBase *sb)
 {
     sb->dev_io = AllocMem(sizeof(struct IOStdReq), MEMF_PUBLIC | MEMF_CLEAR);
     if (!sb->dev_io) return ENOMEM;
-    if (OpenDevice((STRPTR)ACNET_DEVICE_NAME, 0, (struct IORequest *)sb->dev_io, 0)) {
+    if (OPENSOCKET_OPEN_DEVICE(sb->dev_io)) {
         FreeMem(sb->dev_io, sizeof(struct IOStdReq));
         sb->dev_io = NULL;
         return ENETDOWN;

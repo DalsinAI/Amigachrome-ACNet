@@ -1,8 +1,9 @@
 #!/bin/sh
-# ACNet for AmigaOS 3.2.3: acnet.device, native acnetwork.library and
-# bsdsocket.library compatibility facade (bare: no startup code or C library), plus the test
-# program acnettest (libnix), with the os32 stove (bebbo's m68k-amigaos-gcc,
-# NDK 3.2). The library vector table is generated from ACNet's own classic
+# OpenSocket (formerly ACNet, renamed 4 Oct 2026) for AmigaOS 3.2.3:
+# opensocket.device (DEVS:Networks/), opensocket.library (built by
+# ../acnetwork/build.sh) and the bsdsocket.library face (bare: no startup code
+# or C library), plus the test programs (libnix), with the os32 stove (bebbo's
+# m68k-amigaos-gcc, NDK 3.2). The library vector table is generated from its own classic
 # Amiga BSD socket ABI manifest; no third-party socket SFD is required.
 # bsdqual links common/os3/acnet_stack.c: this libnix ignores __stack, so it
 # swaps to a stack of its own.
@@ -23,8 +24,8 @@ BARE="-m68020 -O2 -include sys/types.h -fomit-frame-pointer -fno-toplevel-reorde
 INC="-I$GUEST/common/protocol -I$HERE/include -I$GUEST/network/acnetwork/include"
 COMPAT_INC="-I$STOVE/ndk/SANA+RoadshowTCP-IP/include"
 
-"$CC" $BARE $INC $COMPAT_INC -o "$OUT/acnet.device" "$HERE/device/acnet_device.c" "$GUEST/common/os3/string.c" -lgcc
-echo "$OUT/acnet.device ($(wc -c < "$OUT/acnet.device") bytes)"
+"$CC" $BARE $INC $COMPAT_INC -o "$OUT/opensocket.device" "$HERE/device/acnet_device.c" "$GUEST/common/os3/string.c" -lgcc
+echo "$OUT/opensocket.device ($(wc -c < "$OUT/opensocket.device") bytes)"
 
 STOVE="$STOVE" "$GUEST/network/acnetwork/build.sh" "$OUT"
 
@@ -71,18 +72,16 @@ if [ -f "$HERE/tests/sana2probe.c" ]; then
     echo "$OUT/sana2probe ($(wc -c < "$OUT/sana2probe") bytes)"
 fi
 
-# ACNetControl: the ReAction Commodity (live control, diagnostics, log, Wi-Fi),
-# and ACNetControlGT, the GadTools Commodity on the shared core, which takes
-# its place once it has the same pages (OS 3.x programs are GadTools or MUI).
-# -fno-common: the programs' own library bases must win over libnix's
-# auto-open stubs, which open label.image and window.class by wrong names.
-if [ -f "$HERE/control/acnetcontrol.c" ]; then
-    "$CC" -m68000 -O2 -fno-common -Wall -Wno-pointer-sign -noixemul -I"$HERE/include" -I"$GUEST/network/acnetwork/include" -I"$GUEST/network/acwifi/include" \
-        -o "$OUT/ACNetControl" "$HERE/control/acnetcontrol.c" -lamiga
-    echo "$OUT/ACNetControl ($(wc -c < "$OUT/ACNetControl") bytes)"
+# OpenSocketControl: the Commodity, in GadTools on the shared core (AmigaOS
+# 3.x programs are GadTools or MUI). control/acnetcontrol.c, the retired
+# ReAction version, is no longer built; it stays as the reference for the
+# pages OpenSocketControl still lacks (live control, diagnostics, log, Wi-Fi).
+# -fno-common: the program's own library bases must win over libnix's
+# auto-open stubs.
+if [ -f "$HERE/control/acnetcontrol_gt.c" ]; then
     "$CC" -m68000 -O2 -fno-common -Wall -Wno-pointer-sign -noixemul -I"$HERE/include" \
-        -o "$OUT/ACNetControlGT" "$HERE/control/acnetcontrol_gt.c" "$HERE/control/acnetcontrol_core.c" -lamiga
-    echo "$OUT/ACNetControlGT ($(wc -c < "$OUT/ACNetControlGT") bytes)"
+        -o "$OUT/OpenSocketControl" "$HERE/control/acnetcontrol_gt.c" "$HERE/control/acnetcontrol_core.c" -lamiga
+    echo "$OUT/OpenSocketControl ($(wc -c < "$OUT/OpenSocketControl") bytes)"
 fi
 
 if [ -f "$GUEST/network/acwifi/build.sh" ]; then

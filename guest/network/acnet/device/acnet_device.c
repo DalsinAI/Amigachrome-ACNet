@@ -81,9 +81,9 @@ struct ExecBase *SysBase;
  * in the file: build.sh keeps source order (-fno-toplevel-reorder). */
 int start(void) { return -1; }
 
-static const char dev_name[] = ACNET_DEVICE_NAME;
-static const char dev_id[] = "acnet.device 1.0 (1.10.2026) AmigaChrome ACNet\r\n";
-static const char ver[] __attribute__((used)) = "$VER: acnet.device 1.0 (1.10.2026) AmigaChrome ACNet";
+static const char dev_name[] = OPENSOCKET_DEVICE_NAME;
+static const char dev_id[] = "opensocket.device 1.0 (4.10.2026) OpenSocket (AmigaChrome)\r\n";
+static const char ver[] __attribute__((used)) = "$VER: opensocket.device 1.0 (4.10.2026) OpenSocket (AmigaChrome)";
 
 #define R(off) (*(volatile ULONG *)(b->card + (off)))
 
@@ -477,7 +477,7 @@ static void start_card(struct ACNetBase *b)
     packet_info(b);
     packet_base = b;
     if (!b->packet_task)
-        b->packet_task = create_packet_task((STRPTR)"acnet.packet", 5, packet_worker, 8192);
+        b->packet_task = create_packet_task((STRPTR)"opensocket.packet", 5, packet_worker, 8192);
 }
 
 static void stop_card(struct ACNetBase *b)
