@@ -1,6 +1,6 @@
 # OpenSocket
 
-OpenSocket is a free (MIT) `bsdsocket.library` for AmigaOS 3.2.3: the classic Amiga socket interface, its core library, the card's driver, a Commodity and the standard network tools. It was called ACNet until 4 October 2026. This repository will move to `DalsinAI/OpenSocket`; until then it is `DalsinAI/Amigachrome-ACNet`.
+OpenSocket is a free (MIT) `bsdsocket.library` for AmigaOS 3.2.3: the classic Amiga socket interface, its core library, the card's driver, a Commodity and the standard network tools. It was called ACNet until 4 October 2026. The repository is `DalsinAI/openamigasocket` (it was `DalsinAI/Amigachrome-ACNet`; GitHub forwards the old address).
 
 Today it has one backend, OpenSocket Host: socket calls travel through the OpenSocket card (Zorro II, Dalsin product 6) in an AmigaChrome machine to real sockets on the PC. OpenSocketDirect, a TCP/IP stack of its own (lwIP) for real Amigas and PiStorm, is planned. The design is `docs/architecture/OPENSOCKET_DESIGN.md` in DalsinAI/amigachrome.
 
