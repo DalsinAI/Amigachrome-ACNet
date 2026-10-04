@@ -1,4 +1,4 @@
-/* ACTCPTools route - read-only ACNet IPv4 route view. BSD-3-Clause. */
+/* ACTCPTools route - read-only ACNet IPv4 route view. MIT. */
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <proto/exec.h>

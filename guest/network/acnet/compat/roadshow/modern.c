@@ -1,6 +1,6 @@
 /* ACNet optional modern/Roadshow compatibility helpers.
  * These live in the compatibility tail; the classic core ABI stays unchanged.
- * IPv4 only in ACNet v1. BSD-3-Clause. */
+ * IPv4 only in ACNet v1. MIT. */
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <proto/exec.h>

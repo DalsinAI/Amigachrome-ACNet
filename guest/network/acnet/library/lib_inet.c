@@ -1,4 +1,4 @@
-/* ACNet bsdsocket.library: IPv4 address conversion helpers. BSD-3-Clause. */
+/* ACNet bsdsocket.library: IPv4 address conversion helpers. MIT. */
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <netinet/in.h>

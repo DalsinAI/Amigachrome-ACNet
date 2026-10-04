@@ -1,4 +1,4 @@
-/* Tiny acwifi.device smoke/probe. BSD-3-Clause. */
+/* Tiny acwifi.device smoke/probe. MIT. */
 #include <exec/types.h>
 #include <exec/io.h>
 #include <proto/exec.h>

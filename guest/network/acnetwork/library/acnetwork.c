@@ -1,6 +1,6 @@
 /* acnetwork.library: native ACNet session API for AmigaOS 3.x.
  * bsdsocket.library is a compatibility client of this library.
- * BSD-3-Clause. */
+ * MIT. */
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/resident.h>

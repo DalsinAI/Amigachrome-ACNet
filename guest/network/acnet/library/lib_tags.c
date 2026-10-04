@@ -1,5 +1,5 @@
 /* ACNet bsdsocket.library: classic per-opener SocketBaseTagList settings.
- * BSD-3-Clause. */
+ * MIT. */
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>

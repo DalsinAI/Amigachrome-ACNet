@@ -7,7 +7,7 @@
  *
  * (The retired ReAction ACNetControl, acnetcontrol.c, does not use it.)
  *
- * BSD-3-Clause.
+ * MIT.
  */
 #ifndef ACNETCONTROL_CORE_H
 #define ACNETCONTROL_CORE_H

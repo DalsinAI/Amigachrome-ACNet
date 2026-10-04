@@ -1,5 +1,5 @@
 /* ACTCPTools resolve for AmigaOS 3.2.3.
- * BSD-3-Clause. Uses only the published bsdsocket.library interface. */
+ * MIT. Uses only the published bsdsocket.library interface. */
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <proto/exec.h>

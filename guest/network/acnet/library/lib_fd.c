@@ -3,7 +3,7 @@
  * descriptors share one, so handles are counted and the host socket closes
  * with the last. ReleaseSocket and ObtainSocket pass a socket from one
  * opener to another (a server handing a connection to a worker task).
- * BSD-3-Clause. */
+ * MIT. */
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <proto/exec.h>

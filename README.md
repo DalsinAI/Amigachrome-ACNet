@@ -1,6 +1,6 @@
 # OpenSocket
 
-OpenSocket is a free (BSD-3) `bsdsocket.library` for AmigaOS 3.2.3: the classic Amiga socket interface, its core library, the card's driver, a Commodity and the standard network tools. It was called ACNet until 4 October 2026. This repository will move to `DalsinAI/OpenSocket`; until then it is `DalsinAI/Amigachrome-ACNet`.
+OpenSocket is a free (MIT) `bsdsocket.library` for AmigaOS 3.2.3: the classic Amiga socket interface, its core library, the card's driver, a Commodity and the standard network tools. It was called ACNet until 4 October 2026. This repository will move to `DalsinAI/OpenSocket`; until then it is `DalsinAI/Amigachrome-ACNet`.
 
 Today it has one backend, OpenSocket Host: socket calls travel through the OpenSocket card (Zorro II, Dalsin product 6) in an AmigaChrome machine to real sockets on the PC. OpenSocketDirect, a TCP/IP stack of its own (lwIP) for real Amigas and PiStorm, is planned. The design is `docs/architecture/OPENSOCKET_DESIGN.md` in DalsinAI/amigachrome.
 
@@ -39,8 +39,14 @@ See `STATUS.md`. The complete stack builds and passes its host-side tests; live 
 
 The AmigaChrome runtime supplies the OpenSocket card, the HostSocket service on the PC, the Network switch and the installer that puts this payload on an instance. Those live in DalsinAI/amigachrome with the machine they depend on.
 
-## License
+## Licence and credit
 
-The guest-side OpenSocket source in this repository is BSD-3-Clause. See `LICENSE`.
+OpenSocket is MIT-licensed: `LICENSE`, Copyright (c) 2026 Dalsin Limited. Anyone may use, change, fork and redistribute it, commercially or not. The one condition is the MIT one: the copyright and permission notice stays with every copy and every fork.
+
+A request, not a condition: if you fork or ship OpenSocket, please say it is based on OpenSocket by Dalsin Limited.
+
+Inside the project, a few files keep their own licences:
+- `tools/actcptools/src/ping.c`, `traceroute.c` and `arp.c` derive from 4.4BSD-Lite2 (through Olaf Barthel's Amiga ports) and keep the University of California's licence and notices (`tools/actcptools/THIRD_PARTY.md`).
+- lwIP, when OpenSocketDirect brings it in, keeps its own BSD licence and notice.
 
 AmigaOS/NDK material is not included and remains subject to its own licensing terms.

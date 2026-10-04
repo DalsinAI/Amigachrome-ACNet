@@ -1,4 +1,4 @@
-/* ACNet Roadshow read-only compatibility probe. BSD-3-Clause. */
+/* ACNet Roadshow read-only compatibility probe. MIT. */
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <exec/lists.h>

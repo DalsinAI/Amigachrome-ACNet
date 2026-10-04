@@ -1,5 +1,5 @@
 /* Read-only Roadshow interface/DNS/status compatibility over acnetwork.library.
- * The native ACNet control plane remains authoritative. BSD-3-Clause. */
+ * The native ACNet control plane remains authoritative. MIT. */
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/lists.h>

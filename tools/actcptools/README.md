@@ -55,6 +55,6 @@ The build does not fetch an NDK, a networking SDK or AmiSSL.
 
 The AmigaChrome port removes their floating-point RTT calculations and uses integer microseconds instead. This avoids a dependency on `mathieeedoubbas.library` and keeps the tools suitable for a plain 68020 guest.
 
-`hostname`, `resolve`, `OpenSocket`, `ifconfig`, `route`, `netstat` and the nine newest (`host`, `whois`, `finger`, `telnet`, `ftp`, `tftp`, `sntp`, `httpget`, `nc`) are OpenSocket BSD-3-Clause programs written for this package; none is derived from another implementation.
+`hostname`, `resolve`, `OpenSocket`, `ifconfig`, `route`, `netstat` and the nine newest (`host`, `whois`, `finger`, `telnet`, `ftp`, `tftp`, `sntp`, `httpget`, `nc`) are OpenSocket programs (MIT, like the rest of OpenSocket) written for this package; none is derived from another implementation.
 
 `arp` currently remains source-compatible with the supplied Amiga port, but ACNet intentionally has no mutable guest ARP table in HostSocket mode.

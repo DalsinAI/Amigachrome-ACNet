@@ -5,7 +5,7 @@
  *   httpget -q ...             no progress
  * http:// always; https:// when built with AmiSSL and AmiSSL 5 is installed
  * (certificates checked against AmiSSL's store). Follows up to 5 redirects.
- * OpenSocket ACTCPTools. BSD-3-Clause. */
+ * OpenSocket ACTCPTools. MIT. */
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <proto/exec.h>

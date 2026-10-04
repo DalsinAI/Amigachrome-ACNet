@@ -1,4 +1,4 @@
-/* ACNet bsdsocket.library: DNS, hostname and service lookups. BSD-3-Clause. */
+/* ACNet bsdsocket.library: DNS, hostname and service lookups. MIT. */
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <netdb.h>

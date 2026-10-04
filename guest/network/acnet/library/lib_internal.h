@@ -4,7 +4,7 @@
 /* What the four parts of ACNet's front end share: lib_base.c (the library,
  * errno, tags, descriptors), lib_sockets.c (the socket calls),
  * lib_select.c (waiting and WaitSelect) and lib_names.c (names and
- * addresses). BSD-3-Clause. */
+ * addresses). MIT. */
 #include "acnet_lib.h"
 #include "provider.h"
 #include "achostsocket.h"

@@ -1,4 +1,4 @@
-/* ACNet bsdsocket.library: provider readiness, timeouts and WaitSelect. BSD-3-Clause. */
+/* ACNet bsdsocket.library: provider readiness, timeouts and WaitSelect. MIT. */
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <devices/timer.h>

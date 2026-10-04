@@ -1,4 +1,4 @@
-/* ACTCPTools acnetctl - native ACNet control/status. BSD-3-Clause. */
+/* ACTCPTools acnetctl - native ACNet control/status. MIT. */
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <proto/exec.h>

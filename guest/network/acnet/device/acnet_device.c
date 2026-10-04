@@ -11,7 +11,7 @@
  *
  * BeginIO answers IOERR_NOCMD until the SANA-II side exists. Built bare by
  * ../build.sh (bebbo's m68k-amigaos-gcc, NDK 3.2); design
- * docs/architecture/ACNET_DESIGN.md. BSD-3-Clause.
+ * docs/architecture/ACNET_DESIGN.md. MIT.
  */
 #include <exec/types.h>
 #include <exec/resident.h>
