@@ -159,6 +159,8 @@ static void test_tcp(void)
             result("WaitSelect timeout after cut wait", r==0 && ticks >= TICKS_PER_SECOND/5);
             FreeSignal(sb);
         } else result("WaitSelect ends on signal", 0);
+    }
+
     /* A wait that ends early cancels its timer; the next wait must still
      * last as long as it asks (4 Oct 2026: a stale timer signal made every
      * later WaitSelect return at once). Our own signal ends the first wait
