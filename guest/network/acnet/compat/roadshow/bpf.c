@@ -73,8 +73,7 @@ static void notify_update(struct SocketBase *sb)
     if (!sb->dev_io) {
         sb->dev_io = AllocMem(sizeof(struct IOStdReq), MEMF_PUBLIC | MEMF_CLEAR);
         if (!sb->dev_io) return;
-        if (OpenDevice((STRPTR)ACNET_DEVICE_NAME, 0,
-                       (struct IORequest *)sb->dev_io, 0)) {
+        if (OPENSOCKET_OPEN_DEVICE(sb->dev_io)) {
             FreeMem(sb->dev_io, sizeof(struct IOStdReq)); sb->dev_io = NULL; return;
         }
         sb->dev = (struct Library *)sb->dev_io->io_Device;
@@ -195,7 +194,7 @@ LONG bsd_bpf_read(struct SocketBase *sb, LONG channel, APTR buffer, LONG len)
 }
 static int name_is_acnet0(const char *s)
 {
-    static const char n[] = "acnet0";
+    static const char n[] = "opensocket0";
     int i;
     if (!s) return 0;
     for (i=0;i<6;i++) if (s[i] != n[i]) return 0;

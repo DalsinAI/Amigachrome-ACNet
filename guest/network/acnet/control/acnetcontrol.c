@@ -1,4 +1,11 @@
 /*
+ * RETIRED (4 Oct 2026): ACNet is now OpenSocket, and AmigaOS 3.x programs are
+ * GadTools or MUI. This ReAction Commodity is no longer built. It stays as the
+ * reference for the pages OpenSocketControl (acnetcontrol_gt.c) still has to
+ * gain: live control, DNS/TCP diagnostics, the event log, Wi-Fi. Delete it
+ * once OpenSocketControl has them.
+ */
+/*
  * ACNetControl - the ACNet ReAction Commodity for AmigaOS 3.2.3.
  *
  * First-light UI: native five-page control/status application.  Network
@@ -161,7 +168,7 @@ static void read_acnet_state(void)
     dev_req = (struct IOStdReq *)CreateIORequest(dev_port, sizeof(*dev_req));
     if (!dev_req) return;
 
-    if (OpenDevice(ACNET_DEVICE_NAME, 0, (struct IORequest *)dev_req, 0) == 0) {
+    if (OPENSOCKET_OPEN_DEVICE(dev_req) == 0) {
         acnet_state = acn_state_call(dev_req->io_Device);
     }
 

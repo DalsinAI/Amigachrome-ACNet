@@ -54,7 +54,7 @@ typedef struct ACNCPage {
 
 extern const ACNCPage acnc_page[ACNC_PAGES];
 
-#define ACNC_TITLE   "ACNetControl - Network Configuration for AmigaChrome"
+#define ACNC_TITLE   "OpenSocketControl - Network Configuration"
 #define ACNC_HOTKEY  "ctrl alt n"
 
 /* The card's state, read once at start-up, and the lines that describe it. */

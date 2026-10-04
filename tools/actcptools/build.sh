@@ -27,6 +27,8 @@ build_one arp
 build_one ifconfig
 build_one route
 build_one netstat
-build_one acnetctl
+# C:OpenSocket (was acnetctl): status, online, offline
+"$CC" $CFLAGS -I"$HERE/src" "$HERE/src/opensocket.c" -o "$OUT/OpenSocket"
+echo "$OUT/OpenSocket ($(wc -c < "$OUT/OpenSocket") bytes)"
 
 echo "ACTCPTools build complete."

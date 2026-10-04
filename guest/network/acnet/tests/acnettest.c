@@ -8,7 +8,7 @@
 #include <netdb.h>
 
 struct Library *SocketBase;
-static int fail(const char *s){PutStr((STRPTR)"ACNet: FAIL ");PutStr((STRPTR)s);PutStr((STRPTR)"\n");return 20;}
+static int fail(const char *s){PutStr((STRPTR)"OpenSocket: FAIL ");PutStr((STRPTR)s);PutStr((STRPTR)"\n");return 20;}
 
 int main(void)
 {
@@ -18,12 +18,12 @@ int main(void)
     struct hostent *he;
     SocketBase=OpenLibrary("bsdsocket.library",4);
     if(!SocketBase)return fail("OpenLibrary");
-    PutStr((STRPTR)"ACNet: library open\n");
+    PutStr((STRPTR)"OpenSocket: library open\n");
     if(gethostname((STRPTR)host,sizeof(host)))return fail("gethostname");
-    PutStr((STRPTR)"ACNet: hostname=");PutStr((STRPTR)host);PutStr((STRPTR)"\n");
+    PutStr((STRPTR)"OpenSocket: hostname=");PutStr((STRPTR)host);PutStr((STRPTR)"\n");
     he=gethostbyname((STRPTR)"localhost");
     if(!he||he->h_addrtype!=AF_INET||he->h_length!=4)return fail("gethostbyname localhost");
-    PutStr((STRPTR)"ACNet: DNS localhost OK\n");
+    PutStr((STRPTR)"OpenSocket: DNS localhost OK\n");
     ls=socket(AF_INET,SOCK_STREAM,0);if(ls<0)return fail("listen socket");
     a.sin_len=sizeof(a);a.sin_family=AF_INET;a.sin_port=12345;a.sin_addr.s_addr=0x7f000001UL;
     if(bind(ls,(struct sockaddr*)&a,sizeof(a))<0)return fail("bind");
@@ -34,9 +34,9 @@ int main(void)
     if(send(cs,(APTR)"ping",4,0)!=4)return fail("send");
     if(recv(as,(APTR)buf,4,0)!=4)return fail("recv");
     if(buf[0]!='p'||buf[1]!='i'||buf[2]!='n'||buf[3]!='g')return fail("payload");
-    PutStr((STRPTR)"ACNet: TCP loopback ping OK\n");
+    PutStr((STRPTR)"OpenSocket: TCP loopback ping OK\n");
     if(as>=0)CloseSocket(as);if(cs>=0)CloseSocket(cs);if(ls>=0)CloseSocket(ls);
     CloseLibrary(SocketBase);
-    PutStr((STRPTR)"ACNet: PASS\n");
+    PutStr((STRPTR)"OpenSocket: PASS\n");
     return 0;
 }

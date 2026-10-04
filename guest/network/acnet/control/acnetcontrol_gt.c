@@ -35,7 +35,7 @@
 
 struct Library *GadToolsBase;
 
-#define VERSION_TEXT "ACNetControlGT 1.0 (4.10.2026)"
+#define VERSION_TEXT "OpenSocketControl 1.0 (4.10.2026)"
 static const char version[] __attribute__((used)) = "$VER: " VERSION_TEXT;
 
 enum { GID_PAGES = GID_FIRST_FREE, GID_STATUS };
@@ -354,8 +354,8 @@ static void show_window(void)
     w = 2 * MARGIN + mx_w + MARGIN + nat_w;
     h = 2 * MARGIN + line_h + PAD + nat_h + PAD + line_h + 4;
     win = OpenWindowTags(NULL,
-        WA_Title, (ULONG)"ACNetControl",
-        WA_ScreenTitle, (ULONG)"ACNet - AmigaChrome networking",
+        WA_Title, (ULONG)"OpenSocketControl",
+        WA_ScreenTitle, (ULONG)"OpenSocket - networking for the Amiga",
         WA_PubScreen, (ULONG)scr,
         WA_InnerWidth, w, WA_InnerHeight, h,
         WA_Left, (scr->Width - w) / 2, WA_Top, (scr->Height - h) / 2,
@@ -378,8 +378,8 @@ static void set_page(int p)
 
 static void about(void)
 {
-    struct EasyStruct es = { sizeof(struct EasyStruct), 0, "ACNetControl",
-        VERSION_TEXT "\n\nThe ACNet Commodity in GadTools.\nNetworking runs without it.", "OK" };
+    struct EasyStruct es = { sizeof(struct EasyStruct), 0, "OpenSocketControl",
+        VERSION_TEXT "\n\nThe OpenSocket Commodity.\nNetworking runs without it.", "OK" };
     EasyRequestArgs(win, &es, NULL, NULL);
 }
 
@@ -454,7 +454,7 @@ static int control_main(void)
 
     GadToolsBase = OpenLibrary("gadtools.library", 37);
     if (!GadToolsBase) {
-        PutStr("ACNetControlGT: needs gadtools.library 37 (AmigaOS 2.04 or later).\n");
+        PutStr("OpenSocketControl: needs gadtools.library 37 (AmigaOS 2.04 or later).\n");
         return 20;
     }
     for (i = 0; i < ACNC_PAGES; ++i) page_names[i] = (STRPTR)acnc_page[i].name;
@@ -462,7 +462,7 @@ static int control_main(void)
     i = acnc_broker_open();
     if (i != 1) {
         /* ACNC_ALREADY_RUNNING: Exchange has told that copy to show itself. */
-        if (i != ACNC_ALREADY_RUNNING) PutStr("ACNetControlGT: could not start the Commodity.\n");
+        if (i != ACNC_ALREADY_RUNNING) PutStr("OpenSocketControl: could not start the Commodity.\n");
         acnc_broker_close();
         CloseLibrary(GadToolsBase);
         return i == ACNC_ALREADY_RUNNING ? 5 : 20;

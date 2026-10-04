@@ -23,9 +23,9 @@ struct Library *CxBase;
 #define HOTKEY_ID 0xAC01
 
 static ULONG acnet_state;
-static char status_network[64] = "Network       No ACNet card";
+static char status_network[64] = "Network       No OpenSocket card";
 static char status_card[96] = "Card          Not present";
-static char status_bottom[96] = "No ACNet card - enable Network in Cradle and reboot";
+static char status_bottom[96] = "No OpenSocket card - enable Network in Cradle and reboot";
 
 /* What each page says. Lines are aligned for the Workbench's fixed-width
  * font, as the first-light design was. */
@@ -33,8 +33,8 @@ const ACNCPage acnc_page[ACNC_PAGES] = {
     { "Status", 2, {
         { "Network Status",
           { status_network, status_card,
-            "Library       bsdsocket.library 4.x (ACNet)",
-            "This Amiga    instance / acnet0",
+            "Library       bsdsocket.library 4.x (OpenSocket)",
+            "This Amiga    instance / opensocket0",
             "IP Address    telemetry pending",
             "Subnet Mask   telemetry pending",
             "Gateway       telemetry pending",
@@ -70,7 +70,7 @@ const ACNCPage acnc_page[ACNC_PAGES] = {
           { "Open sockets on this Amiga",
             "Program       Protocol   Local          Remote         State",
             "-------------------------------------------------------------",
-            "Connection inventory pending ACNet private tags.",
+            "Connection inventory pending OpenSocket private tags.",
             "Version 1 is read-only.", NULL },
           { { 0, NULL, FALSE } }, FALSE } } },
     { "Diagnostics", 1, {
@@ -81,8 +81,8 @@ const ACNCPage acnc_page[ACNC_PAGES] = {
             { GID_DIAG_INTERNET, "Check the _internet...", FALSE },
             { GID_DIAG_COPY, "Cop_y report", FALSE } }, FALSE } } },
     { "Log", 1, {
-        { "ACNet Event Log",
-          { "Event ring support is the next ACNet device/HostSocket backend.",
+        { "OpenSocket Event Log",
+          { "Event ring support is the next OpenSocket device/HostSocket backend.",
             "Online/offline, DNS failures and policy refusals will appear here.", NULL },
           { { GID_LOG_CLEAR, "_Clear", TRUE }, { GID_LOG_SAVE, "_Save as...", TRUE }, { 0, NULL, FALSE } }, TRUE } } },
 };
@@ -104,7 +104,7 @@ void acnc_read_state(void)
     struct IOStdReq *req = port ? (struct IOStdReq *)CreateIORequest(port, sizeof(*req)) : NULL;
 
     acnet_state = 0;
-    if (req && OpenDevice(ACNET_DEVICE_NAME, 0, (struct IORequest *)req, 0) == 0) {
+    if (req && OPENSOCKET_OPEN_DEVICE(req) == 0) {
         acnet_state = acn_state_call(req->io_Device);
         CloseDevice((struct IORequest *)req);
     }
@@ -112,17 +112,17 @@ void acnc_read_state(void)
     if (port) DeleteMsgPort(port);
 
     if (!(acnet_state & ACN_STATE_CARD)) {
-        strcpy(status_network, "Network       No ACNet card");
+        strcpy(status_network, "Network       No OpenSocket card");
         strcpy(status_card,    "Card          Not present");
-        strcpy(status_bottom,  "No ACNet card - enable Network in Cradle and reboot");
+        strcpy(status_bottom,  "No OpenSocket card - enable Network in Cradle and reboot");
     } else if (!(acnet_state & ACN_STATE_ONLINE)) {
         strcpy(status_network, "Network       Off in Cradle");
-        strcpy(status_card,    "Card          ACNet - Dalsin product 6 - HostSocket");
+        strcpy(status_card,    "Card          OpenSocket - Dalsin product 6 - HostSocket");
         strcpy(status_bottom,  "Network is disabled in Cradle");
     } else {
         strcpy(status_network, "Network       Online");
-        strcpy(status_card,    "Card          ACNet - Dalsin product 6 - HostSocket");
-        strcpy(status_bottom,  "Online - ACNet card present");
+        strcpy(status_card,    "Card          OpenSocket - Dalsin product 6 - HostSocket");
+        strcpy(status_bottom,  "Online - OpenSocket card present");
     }
 }
 
@@ -147,9 +147,9 @@ int acnc_broker_open(void)
 
     memset(&nb, 0, sizeof(nb));
     nb.nb_Version = NB_VERSION;
-    nb.nb_Name = "ACNetControl";            /* both front ends: only one runs */
-    nb.nb_Title = "ACNet Network Control";
-    nb.nb_Descr = "Status and controls for AmigaChrome ACNet";
+    nb.nb_Name = "OpenSocketControl";
+    nb.nb_Title = "OpenSocket Network Control";
+    nb.nb_Descr = "Status and controls for OpenSocket";
     nb.nb_Unique = NBU_UNIQUE | NBU_NOTIFY;
     nb.nb_Flags = COF_SHOW_HIDE;
     nb.nb_Pri = 0;

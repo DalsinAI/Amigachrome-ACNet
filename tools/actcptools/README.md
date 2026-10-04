@@ -1,18 +1,18 @@
 # ACTCPTools — AmigaOS 3.2.3 network utilities
 
-ACTCPTools is the classic-Amiga command-line tool set used to qualify ACNet.
+ACTCPTools is OpenSocket's classic-Amiga command-line tool set (OpenSocket was ACNet until 4 October 2026). The tools install in `SYS:Tools/OpenSocket/`; `OpenSocket` (was `acnetctl`) installs in `C:`.
 
 ## Contract
 
 The application-compatibility tools are ordinary AmigaOS programs using the published `bsdsocket.library` API:
 
-`hostname/resolve/ping/traceroute/arp -> bsdsocket.library -> acnetwork.library -> acnet.device -> ACNet card -> Linux HostSocket`
+`hostname/resolve/ping/traceroute/arp -> bsdsocket.library -> opensocket.library -> opensocket.device -> OpenSocket card -> Linux HostSocket`
 
-The ACNet-native administration tools use the public `acnetwork.library` API directly:
+The OpenSocket administration tools use the public `opensocket.library` API directly (it was `acnetwork.library`):
 
-`ifconfig/route/netstat/acnetctl -> acnetwork.library -> acnet.device -> ACNet card -> Linux HostSocket`
+`ifconfig/route/netstat/OpenSocket -> opensocket.library -> opensocket.device -> OpenSocket card -> Linux HostSocket`
 
-No ACTCPTool calls HostSocket, ACNet private device vectors, or AmigaChrome host APIs directly.
+No ACTCPTool calls HostSocket, the device's private vectors, or AmigaChrome host APIs directly.
 
 ## Current port status
 
@@ -26,7 +26,7 @@ No ACTCPTool calls HostSocket, ACNet private device vectors, or AmigaChrome host
 | `ifconfig` | PASS | PASS (read-only) | Native ACNet interface/address/link/counter view. |
 | `route` | PASS | PASS (read-only) | Native ACNet IPv4 route view. |
 | `netstat` | PASS | PASS (read-only) | Native ACNet state/counters and this-instance socket inventory. |
-| `acnetctl` | PASS | PASS | Native status and soft online/offline control; Cradle remains authoritative. |
+| `OpenSocket` (was `acnetctl`) | PASS | PASS | Native status and soft online/offline control; Cradle remains authoritative. |
 
 All binaries target 68020 and AmigaOS 3.2.3.
 ## Building

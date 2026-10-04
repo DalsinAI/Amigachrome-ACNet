@@ -1,5 +1,7 @@
 # ACNet Status
 
+> **Renamed 4 October 2026.** ACNet is now OpenSocket: `acnet.device` is `DEVS:Networks/opensocket.device`, `acnetwork.library` is `opensocket.library`, `acwifi.device` is `opensocketwifi.device`, ACNetControlGT is OpenSocketControl (the ReAction version is retired), `acnetctl` is `C:OpenSocket`, the tools are in `SYS:Tools/OpenSocket/` and the interface is `opensocket0`. The current design is `docs/architecture/OPENSOCKET_DESIGN.md` in DalsinAI/amigachrome. The entries below keep the names of their time.
+
 ## 2026-10-03 - Complete-stack code milestone
 
 The specified AmigaOS 3.2.3 ACNet stack is now implemented in code on the complete-stack branches. The remaining release work is matching guest/host integration and live qualification, not invention of another TCP/IP core.

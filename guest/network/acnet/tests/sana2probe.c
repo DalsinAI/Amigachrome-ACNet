@@ -50,7 +50,7 @@ int main(void)
     tags[2].ti_Tag = TAG_DONE; tags[2].ti_Data = 0;
     io->ios2_BufferManagement = tags;
 
-    err = OpenDevice(ACNET_DEVICE_NAME, 0, (struct IORequest *)io, 0);
+    err = OPENSOCKET_OPEN_DEVICE(io);
     check(err == 0, "OpenDevice");
     if (err) return 20;
 

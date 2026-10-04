@@ -2,20 +2,28 @@
 #define ACNET_DEVICE_H
 
 /*
- * acnet.device's private calls: the one driver for the ACNet card (Zorro II,
- * Dalsin product 6; common/protocol/achostsocket.h). ACNet's bsdsocket.library
- * opens the device and calls these vectors directly, with no I/O request per
- * call. Design: docs/architecture/ACNET_DESIGN.md.
+ * opensocket.device's private calls: the one driver for the OpenSocket card
+ * (formerly ACNet; Zorro II, Dalsin product 6; common/protocol/achostsocket.h).
+ * opensocket.library opens the device and calls these vectors directly, with
+ * no I/O request per call. Design: OPENSOCKET_DESIGN.md in DalsinAI/amigachrome.
  *
  * The standard device vectors come first (Open -6, Close -12, Expunge -18,
  * reserved -24, BeginIO -30, AbortIO -36). BeginIO implements the SANA-II
- * packet facade; the private vectors below carry ACNet control/socket calls.
+ * packet facade; the private vectors below carry OpenSocket control/socket calls.
  */
 #include <exec/types.h>
 #include <exec/nodes.h>
 #include <exec/tasks.h>
 
-#define ACNET_DEVICE_NAME   "acnet.device"
+/* The device lives in DEVS:Networks/ (4 Oct 2026: ACNet became OpenSocket).
+ * Openers try that first and then the old name, so a new program still works
+ * on an install that has only acnet.device. 0, or OpenDevice's error. */
+#define OPENSOCKET_DEVICE_NAME "opensocket.device"            /* its node name */
+#define OPENSOCKET_DEVICE_PATH "DEVS:Networks/opensocket.device"
+#define OPENSOCKET_DEVICE_OLD  "acnet.device"
+#define OPENSOCKET_OPEN_DEVICE(io) \
+    (OpenDevice((STRPTR)OPENSOCKET_DEVICE_PATH, 0, (struct IORequest *)(io), 0) == 0 ? 0 : \
+     OpenDevice((STRPTR)OPENSOCKET_DEVICE_OLD, 0, (struct IORequest *)(io), 0))
 #define ACNET_DEVICE_VERSION 1
 
 /* One HostSocket command. The device copies tx in, runs the command and
