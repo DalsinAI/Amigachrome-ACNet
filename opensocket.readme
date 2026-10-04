@@ -1,0 +1,55 @@
+Short:        Free bsdsocket.library and net tools
+Uploader:     (Dale fills this in at upload time)
+Author:       Dale Kirkwood (Dalsin Limited)
+Type:         comm/tcp
+Version:      1.0
+Requires:     AmigaOS 3.2.3, an AmigaChrome machine (see below)
+Architecture: m68k-amigaos >= 3.2
+Distribution: Aminet
+
+OpenSocket is a free bsdsocket.library for AmigaOS 3.2.3: the classic
+Amiga socket interface that mail, web, FTP and game programs use, with
+its own core library, the card's driver, a Commodity and the standard
+network tools. It was called ACNet until 4 October 2026.
+
+What it needs today
+-------------------
+OpenSocket's first backend, OpenSocket Host, sends socket calls through
+the OpenSocket card of an AmigaChrome machine to real sockets on the PC
+it runs on. So today it needs AmigaChrome, with Network switched on in
+Cradle (which then installs OpenSocket by itself). OpenSocketDirect, a
+TCP/IP stack of its own for real Amigas (PiStorm first, then SANA-II
+cards), is planned.
+
+What is in it
+-------------
+Libs/bsdsocket.library       all 46 classic calls, none stubbed, and 27
+                             later ones (BPF, routes, modern lookups)
+Libs/opensocket.library      the core: status, interfaces, routes,
+                             sockets, the event log, Wi-Fi requests
+Devs/Networks/opensocket.device   the card's driver, with a SANA-II face
+Devs/opensocketwifi.device   the PC's Wi-Fi from the Amiga, if allowed
+Tools/Commodities/OpenSocketControl   status, Wi-Fi, connections,
+                             diagnostics and the log (GadTools)
+C/OpenSocket                 online, offline and status from a Shell
+Tools/OpenSocket/            ping, traceroute, arp, ifconfig, route,
+                             netstat, hostname, resolve, host, whois,
+                             finger, telnet, ftp, tftp, sntp, httpget, nc
+
+The tools stay in their own drawer, so another stack's commands in C:
+are never overwritten, and OpenSocket never replaces another stack's
+bsdsocket.library. On an older install it falls back to acnet.device.
+
+Licence
+-------
+MIT. Copyright (c) 2026 Dalsin Limited. Use it, change it, fork it and
+pass it on, free; the copyright and licence notice stays with every
+copy. If you fork it, please say it is based on OpenSocket by Dalsin
+Limited (a request, not a condition).
+
+ping, traceroute and arp come from 4.4BSD-Lite2 through Olaf Barthel's
+Amiga ports and keep their own licence: this product includes software
+developed by the University of California, Berkeley and its
+contributors.
+
+Source: https://github.com/DalsinAI/openamigasocket
