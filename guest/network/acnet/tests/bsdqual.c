@@ -134,6 +134,33 @@ static void test_tcp(void)
     tv.tv_secs=0; tv.tv_micro=0; sigs=0;
     result("WaitSelect empty poll", WaitSelect(as+1,&rf,NULL,NULL,&tv,&sigs)==0);
 
+    /* A timed wait cut short (here by a signal) must not leave the next timed
+     * wait to see its timer as already fired: in 4.1 every later
+     * WaitSelect with a timeout returned 0 at once. */
+    {
+        BYTE sb = AllocSignal(-1);
+        struct DateStamp t0, t1;
+        LONG ticks, r;
+        if (sb >= 0) {
+            ULONG m = 1UL << sb;
+            SetSignal(m, m);
+            FD_ZERO(&rf); FD_SET(as,&rf);
+            tv.tv_secs=2; tv.tv_micro=0; sigs=m;
+            r = WaitSelect(as+1,&rf,NULL,NULL,&tv,&sigs);
+            result("WaitSelect ends on signal", r==0 && sigs==m);
+            FD_ZERO(&rf); FD_SET(as,&rf);
+            tv.tv_secs=0; tv.tv_micro=300000; sigs=0;
+            DateStamp(&t0);
+            r = WaitSelect(as+1,&rf,NULL,NULL,&tv,&sigs);
+            DateStamp(&t1);
+            ticks = (t1.ds_Days-t0.ds_Days)*24*60*60*TICKS_PER_SECOND
+                  + (t1.ds_Minute-t0.ds_Minute)*60*TICKS_PER_SECOND
+                  + (t1.ds_Tick-t0.ds_Tick);
+            result("WaitSelect timeout after cut wait", r==0 && ticks >= TICKS_PER_SECOND/5);
+            FreeSignal(sb);
+        } else result("WaitSelect ends on signal", 0);
+    }
+
     result("FIONBIO enable", IoctlSocket(cs, FIONBIO, &nb) == 0);
     nb=0;
     result("FIONBIO disable", IoctlSocket(cs, FIONBIO, &nb) == 0);
