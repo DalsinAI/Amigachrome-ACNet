@@ -159,6 +159,28 @@ static void test_tcp(void)
             result("WaitSelect timeout after cut wait", r==0 && ticks >= TICKS_PER_SECOND/5);
             FreeSignal(sb);
         } else result("WaitSelect ends on signal", 0);
+    /* A wait that ends early cancels its timer; the next wait must still
+     * last as long as it asks (4 Oct 2026: a stale timer signal made every
+     * later WaitSelect return at once). Our own signal ends the first wait
+     * after its timer has started. */
+    {
+        BYTE own = AllocSignal(-1);
+        ULONG m = own >= 0 ? 1UL << own : 0;
+        struct DateStamp t0, t1;
+        LONG ticks, w;
+        if (m) {
+            SetSignal(m, m);
+            FD_ZERO(&rf); FD_SET(as,&rf); tv.tv_secs=2; tv.tv_micro=0; sigs=m;
+            w = WaitSelect(as+1,&rf,NULL,NULL,&tv,&sigs);
+            result("WaitSelect ends on a signal", w==0 && (sigs&m));
+            FD_ZERO(&rf); FD_SET(as,&rf); tv.tv_secs=1; tv.tv_micro=0; sigs=0;
+            DateStamp(&t0);
+            w = WaitSelect(as+1,&rf,NULL,NULL,&tv,&sigs);
+            DateStamp(&t1);
+            ticks = ((t1.ds_Days - t0.ds_Days) * 1440 + (t1.ds_Minute - t0.ds_Minute)) * 3000 + (t1.ds_Tick - t0.ds_Tick);
+            result("WaitSelect keeps its timeout after an early wait", w==0 && ticks >= 35);
+            FreeSignal(own);
+        } else result("WaitSelect keeps its timeout after an early wait", 0);
     }
 
     result("FIONBIO enable", IoctlSocket(cs, FIONBIO, &nb) == 0);
