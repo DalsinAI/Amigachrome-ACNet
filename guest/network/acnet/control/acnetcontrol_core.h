@@ -1,47 +1,70 @@
 /*
- * ACNetControl's shared core: what both front ends show and do.
+ * OpenSocketControl's core: what the Commodity shows and does, apart from
+ * drawing it. The GadTools front end (acnetcontrol_gt.c) lays each page out
+ * from the tables here: per group, its lines, its input fields, a list and
+ * its buttons. The lines and lists are the core's own buffers, which
+ * acnc_refresh() and acnc_press() rewrite.
  *
- * ACNetControl comes as two programs with one behaviour:
- *   ACNetControl    ReAction, for AmigaOS 3.2.3 (acnetcontrol.c);
- *   ACNetControlGT  GadTools, for AmigaOS 2.04 to 3.2 (acnetcontrol_gt.c).
- * Each draws the pages below in its own toolkit; neither has page text of
- * its own, so the two cannot drift apart. They register the same broker
- * name, so only one runs at a time.
+ * (The retired ReAction ACNetControl, acnetcontrol.c, does not use it.)
  *
- * BSD-3-Clause.
+ * MIT.
  */
 #ifndef ACNETCONTROL_CORE_H
 #define ACNETCONTROL_CORE_H
 
 #include <exec/types.h>
+#include <exec/lists.h>
 #include <exec/ports.h>
 
 enum {
     GID_TABS = 1,
-    GID_GO_OFFLINE,
+    GID_REFRESH,
+    GID_GO_OFFLINE,             /* its label says Go offline or Go online */
     GID_WIFI_RESCAN,
+    GID_WIFI_JOIN,
+    GID_WIFI_LEAVE,
+    GID_WIFI_FORGET,
     GID_DIAG_DNS,
     GID_DIAG_CONNECT,
     GID_DIAG_INTERNET,
     GID_DIAG_COPY,
     GID_LOG_CLEAR,
     GID_LOG_SAVE,
+    GID_F_WIFI_SSID,            /* input fields */
+    GID_F_DIAG_NAME,
+    GID_F_DIAG_HOST,
+    GID_F_DIAG_PORT,
+    GID_L_WIFI,                 /* lists */
+    GID_L_CONN,
+    GID_L_LOG,
     GID_FIRST_FREE              /* a front end's own gadgets start here */
 };
 
-#define ACNC_PAGES      5
-#define ACNC_MAX_LINES  12
+#define ACNC_PAGES       5
+#define ACNC_MAX_LINES   12
+#define ACNC_MAX_FIELDS  3
 #define ACNC_MAX_BUTTONS 4
 
 typedef struct ACNCButton {
     ULONG id;                   /* 0 ends the list */
     const char *label;          /* '_' marks the shortcut key */
-    BOOL disabled;              /* no backend for it yet */
+    BOOL disabled;              /* no backend for it */
 } ACNCButton;
+
+typedef struct ACNCField {
+    ULONG id;                   /* 0 ends the list */
+    const char *label;          /* shown to its left */
+    char *buf;                  /* the core's copy: the front end writes what */
+    UWORD size;                 /* was typed here before a button runs */
+    UWORD chars;                /* how wide it shows */
+} ACNCField;
 
 typedef struct ACNCGroup {
     const char *title;
     const char *line[ACNC_MAX_LINES];   /* NULL ends the list; "" is a blank line */
+    ACNCField field[ACNC_MAX_FIELDS];
+    ULONG list_id;              /* a read-only scrolling list under the fields, or 0 */
+    UWORD list_rows, list_chars;
     ACNCButton button[ACNC_MAX_BUTTONS];
     BOOL buttons_in_a_row;      /* else one under another */
 } ACNCGroup;
@@ -54,17 +77,36 @@ typedef struct ACNCPage {
 
 extern const ACNCPage acnc_page[ACNC_PAGES];
 
-#define ACNC_TITLE   "ACNetControl - Network Configuration for AmigaChrome"
+#define ACNC_TITLE   "OpenSocketControl - Network Configuration"
 #define ACNC_HOTKEY  "ctrl alt n"
 
-/* The card's state, read once at start-up, and the lines that describe it. */
-void acnc_read_state(void);
+/* Opens opensocket.library (when it is there) and reads everything once. */
+void acnc_open(void);
+void acnc_close(void);
+
+/* Reads the status, interface, routes, DNS, sockets and new log entries
+ * again. TRUE when what a page shows changed; *state_changed (may be NULL)
+ * when online/offline changed, which changes a button's label. */
+BOOL acnc_refresh(BOOL *state_changed);
+
+/* The nodes a list shows (ln_Name is the text), by its id. */
+struct List *acnc_list(ULONG list_id);
+
+/* Runs a button, after the front end has copied each field's text into its
+ * buf. confirm() asks the user and returns TRUE to go on. TRUE when what a
+ * page shows changed. */
+BOOL acnc_press(ULONG id, BOOL (*confirm)(const char *text));
+
+/* A row picked in a list: for the Wi-Fi list, its network's name goes into
+ * the SSID field. TRUE when a field changed. */
+BOOL acnc_pick(ULONG list_id, UWORD row);
+
 const char *acnc_status_line(void);     /* the status bar */
 
 /* The commodity. show() and hide() are the front end's window calls.
  * acnc_broker_signal() is 0 until acnc_broker_open() succeeds.
- * acnc_broker_open(): 1 ready, 0 failed, ACNC_ALREADY_RUNNING when either
- * front end already runs (Exchange has told that copy to show itself). */
+ * acnc_broker_open(): 1 ready, 0 failed, ACNC_ALREADY_RUNNING when a copy
+ * already runs (Exchange has told that copy to show itself). */
 #define ACNC_ALREADY_RUNNING (-1)
 int acnc_broker_open(void);
 void acnc_broker_close(void);

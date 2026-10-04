@@ -1,4 +1,4 @@
-/* ACNet bsdsocket.library: options and ioctl. BSD-3-Clause. */
+/* ACNet bsdsocket.library: options and ioctl. MIT. */
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <sys/socket.h>

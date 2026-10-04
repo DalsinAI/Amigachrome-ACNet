@@ -1,4 +1,4 @@
-/* ACNet bsdsocket.library: stream/datagram I/O. BSD-3-Clause. */
+/* ACNet bsdsocket.library: stream/datagram I/O. MIT. */
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <sys/socket.h>

@@ -1,64 +1,52 @@
-# Amigachrome-ACNet
+# OpenSocket
 
-ACNet is the Amiga-side networking project developed for AmigaChrome. It provides a `bsdsocket.library` compatible front end, `acnet.device`, a provider boundary, and the HostSocket guest protocol used to reach modern host networking services.
+OpenSocket is a free (MIT) `bsdsocket.library` for AmigaOS 3.2.3: the classic Amiga socket interface, its core library, the card's driver, a Commodity and the standard network tools. It was called ACNet until 4 October 2026. This repository will move to `DalsinAI/OpenSocket`; until then it is `DalsinAI/Amigachrome-ACNet`.
 
-The public repository contains the reusable guest networking project. AmigaChrome-specific machine emulation, native bridge integration, Cradle UI/configuration, and instance lifecycle code remain in the main AmigaChrome repository.
+Today it has one backend, OpenSocket Host: socket calls travel through the OpenSocket card (Zorro II, Dalsin product 6) in an AmigaChrome machine to real sockets on the PC. OpenSocketDirect, a TCP/IP stack of its own (lwIP) for real Amigas and PiStorm, is planned. The design is `docs/architecture/OPENSOCKET_DESIGN.md` in DalsinAI/amigachrome.
 
-## Current status
+## The parts
 
-Verified through 2 October 2026 with AmigaOS 3.2.3 in the dedicated AmigaChrome ACNet test instance:
+| File | Installed as | What it is |
+| --- | --- | --- |
+| `bsdsocket.library` | `LIBS:` | The published socket interface: the 46 classic vectors (none stubbed) and 27 Roadshow-era calls after them (BPF, routes, modern IPv4 lookups). Its id string says OpenSocket. |
+| `opensocket.library` | `LIBS:` | OpenSocket's core: status, interfaces, routes, sockets, the event log, Wi-Fi requests. Everything else opens it. Was `acnetwork.library`. |
+| `opensocket.device` | `DEVS:Networks/` | The card's driver: private calls for sockets, and a SANA-II face for frames. Was `acnet.device`; programs that open it fall back to `acnet.device` on older installs. |
+| `opensocketwifi.device` | `DEVS:` | Control of the PC's Wi-Fi, by permission. Was `acwifi.device`. |
+| `OpenSocketControl` | `SYS:Tools/Commodities/` | The Commodity, in GadTools. Was ACNetControlGT; the ReAction ACNetControl is retired. |
+| `OpenSocket` | `C:` | Status, online, offline. Was `acnetctl`. |
+| ping, traceroute, arp, ifconfig, route, netstat, hostname, resolve | `SYS:Tools/OpenSocket/` | The standard network tools (ACTCPTools). Never put in `C:`, so another stack's commands are not overwritten. |
 
-- `bsdsocket.library` opens successfully.
-- `gethostname()` succeeds.
-- DNS lookup of `localhost` succeeds.
-- TCP `socket`, `bind`, `listen`, `connect`, `accept`, `send`, and `recv` succeed end to end.
-- The guest loopback payload is verified and returns RC 0.
-- The logical core exposes the classic 46-vector application ABI plus 10 permanently reserved slots; 43 vectors are implemented and 3 are honest `ENOSYS` stubs.
-- The physical table is padded safely through slot 139 with compatibility guards, so callers built for a larger legacy socket ABI fail cleanly instead of jumping beyond the library. These guard slots are not ACNet APIs.
-
-The clean-core guest qualification passes 47/47 with RC 0. The corresponding AmigaChrome HostSocket service has 21/21 host tests passing, and the ACNet-enabled native A1200 board has 89/89 board tests passing. Those host/runtime tests live in the AmigaChrome repository because they are platform-specific.
-
-## Repository layout
-
-- `guest/network/acnet/library/` - `bsdsocket.library` front end and provider interface.
-- `guest/network/acnet/device/` - `acnet.device` guest driver for the ACNet card transport.
-- `guest/network/acnet/include/` - private guest device interface.
-- `guest/common/protocol/` - shared ACNet/HostSocket protocol definitions.
-- `guest/common/os3/` - minimal OS3 support used by the bare binaries.
-- `guest/network/acnet/tests/acnettest.c` - first-light AmigaOS smoke test.
-- `docs/` - architecture and compatibility design material.
+The network interface is `opensocket0` (was `acnet0`). The card's HostSocket block keeps its signature ("ACH1"), commands and product number, so the wire format is unchanged.
 
 ## Building
 
-The NDK is deliberately not redistributed in this repository. Set `STOVE` to an AmigaOS 3.x cross-build environment containing `m68k-amigaos-gcc` and the standard AmigaOS networking headers. ACNet owns its ABI manifest; no third-party socket-library SFD is required.
+The NDK is not redistributed here. Set `STOVE` to an AmigaOS 3.x cross-build environment containing `m68k-amigaos-gcc` and NDK 3.2 (`$STOVE/ndk`, for the SANA-II and Roadshow headers).
 
 ```sh
-STOVE=/path/to/os32 ./guest/network/acnet/build.sh ./build/acnet
+STOVE=/path/to/os32 ./guest/network/acnet/build.sh ./build/opensocket
+STOVE=/path/to/os32 ./tools/actcptools/build.sh ./build/opensocket
 ```
 
-A successful build produces:
+The first builds the libraries, both devices, `OpenSocketControl` and the qualification programs (acnettest, bsdqual and the probes); the second builds `OpenSocket` and the tools. The builds are reproducible: the same commit gives the same bytes.
 
-```text
-acnet.device
-bsdsocket.library
-acnettest
-bsdqual
-ACNetControl
-ACNetControlGT
-```
+The vector table is generated from the checked-in manifest `guest/network/acnet/abi/bsdsocket-v4.json`; no third-party socket-library SFD is read. Source folders still carry their ACNet-era names (`guest/network/acnet`, `acnetwork`, `acwifi`); they move with the repository rename.
 
-The vector table is generated from ACNet's checked-in `guest/network/acnet/abi/bsdsocket-v4.json` manifest. No third-party socket-library SFD is read by the default build. The compatibility guard layout is a checked-in safety manifest under `guest/network/acnet/compat/`.
+## Status
 
-## Scope
-
-ACNet is currently an alpha implementation. The near-term compatibility campaign covers `WaitSelect`, UDP, non-blocking I/O, socket timeouts/options, name/service lookups, and normal Amiga TCP/IP applications. Stack-specific administration APIs are outside the core contract.
+See `STATUS.md`. The complete stack builds and passes its host-side tests; live qualification of the matched guest and host set on AmigaOS 3.2.3 comes next. Until then, treat it as alpha.
 
 ## AmigaChrome integration
 
-The AmigaChrome runtime supplies the ACNet Zorro-II card, HostSocket host service, interrupt wiring, network enable/disable policy, and Cradle lifecycle. Those components are intentionally maintained with the machine/runtime they depend on rather than duplicated here.
+The AmigaChrome runtime supplies the OpenSocket card, the HostSocket service on the PC, the Network switch and the installer that puts this payload on an instance. Those live in DalsinAI/amigachrome with the machine they depend on.
 
-## License
+## Licence and credit
 
-The guest-side ACNet source in this repository is BSD-3-Clause. See `LICENSE`.
+OpenSocket is MIT-licensed: `LICENSE`, Copyright (c) 2026 Dalsin Limited. Anyone may use, change, fork and redistribute it, commercially or not. The one condition is the MIT one: the copyright and permission notice stays with every copy and every fork.
+
+A request, not a condition: if you fork or ship OpenSocket, please say it is based on OpenSocket by Dalsin Limited.
+
+Inside the project, a few files keep their own licences:
+- `tools/actcptools/src/ping.c`, `traceroute.c` and `arp.c` derive from 4.4BSD-Lite2 (through Olaf Barthel's Amiga ports) and keep the University of California's licence and notices (`tools/actcptools/THIRD_PARTY.md`).
+- lwIP, when OpenSocketDirect brings it in, keeps its own BSD licence and notice.
 
 AmigaOS/NDK material is not included and remains subject to its own licensing terms.

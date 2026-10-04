@@ -1,7 +1,7 @@
 /* ACNet bsdsocket.library: the library itself. Its ROMTag, its init, and a
  * base per OpenLibrary: the master's jump table and Library header are
  * copied in front of each opener's own state, as classic Amiga socket libraries do,
- * so errno, signals and descriptors belong to the opener. BSD-3-Clause. */
+ * so errno, signals and descriptors belong to the opener. MIT. */
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/resident.h>
@@ -18,8 +18,8 @@ struct ExecBase *SysBase;
 int start(void) { return -1; }
 
 static const char lib_name[] = "bsdsocket.library";
-static const char lib_id[] = "bsdsocket.library 4.1 (1.10.2026) ACNet (AmigaChrome)\r\n";
-static const char lib_ver[] __attribute__((used)) = "$VER: bsdsocket.library 4.1 (1.10.2026) ACNet (AmigaChrome)";
+static const char lib_id[] = "bsdsocket.library 4.1 (4.10.2026) OpenSocket (AmigaChrome)\r\n";
+static const char lib_ver[] __attribute__((used)) = "$VER: bsdsocket.library 4.1 (4.10.2026) OpenSocket (AmigaChrome)";
 
 extern const APTR acnet_vectors[];
 
@@ -85,6 +85,7 @@ BPTR lib_close(REG(a6, struct SocketBase *sb))
         if (sb->fds[s].handle) fd_free(sb, s);
     names_close(sb);
     timer_close(sb);
+    bpf_close_all(sb);
     prov_close(sb);
     if (sb->scratch) FreeMem(sb->scratch, SCRATCH_SIZE);
     FreeMem(sb->fds, sb->dtablesize * sizeof(struct FD));

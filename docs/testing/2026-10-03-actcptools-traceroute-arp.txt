@@ -1,0 +1,38 @@
+ACTCPTools traceroute + ARP qualification
+
+Date: 2026-10-03
+Guest: Instance-6 (AmigaOS 3.2.3 ACNet test)
+Target: m68k-68020
+
+Stack under test:
+ACTCPTools -> bsdsocket.library -> acnetwork.library -> acnet.device -> ACNet card -> HostSocket -> Linux
+
+Traceroute:
+- OS3 binary build: PASS
+- focused HostSocket suite: 23 PASS / 2 expected skips
+- live traceroute: RC=0
+- first hop returned successfully with sub-millisecond guest RTT
+- guest raw UDP/IP probe is translated to Linux UDP
+- Linux IP_RECVERR error queue is translated back to classic ICMP Time Exceeded
+
+ARP:
+- OS3 binary build: PASS
+- host neighbour command suite: 24 PASS / 2 expected skips
+- live arp -a -n: RC=0
+- complete and incomplete IPv4 neighbour entries rendered correctly
+- read-only only: no guest neighbour add/delete operation exists
+Architecture/security notes:
+- bsdsocket.library remains the classic compatibility facade.
+- acnetwork.library is the neutral AmigaChrome-native network API beneath it.
+- Roadshow slots 68/69 are implemented only for FreeRouteInfo/GetRouteInfo.
+- the rest of the Roadshow compatibility guard remains failure-only.
+- GetRouteInfo currently accepts AF_INET + RTF_LLINFO only.
+- HostSocket returns bounded fixed-size neutral neighbour records.
+- Linux raw-socket capability is not required for traceroute or ARP.
+
+Guest hygiene:
+- User-Startup was backed up before the ARP test and restored afterward.
+- bsdsocket.library and acnetwork.library were backed up and restored afterward.
+- restored hashes matched the pre-test files.
+- Instance-6 host and runtime were stopped after qualification.
+- no general-purpose AmigaChrome instance was modified.

@@ -1,0 +1,27 @@
+ACNet acnetwork.library + ICMP qualification
+
+Date: 2026-10-02
+Guest: Instance-6 (AmigaOS 3.2.3 ACNet test)
+
+Guest stack:
+ACTCPTools -> bsdsocket.library -> acnetwork.library -> acnet.device -> ACNet card -> HostSocket -> Linux
+
+Results:
+- direct acnetwork.library open/state/signal/close probe: RC=0
+- bsdsocket facade probe including async DNS: RC=0
+- BSD qualification: PASS=49 FAIL=0 RC=0
+- ping 127.0.0.1: RC=0, 1 sent / 1 received / 0% loss
+- ping RTT observed: 0.324 ms
+
+Host-side constrained ICMP:
+- unrestricted Linux SOCK_RAW/IPPROTO_ICMP not required
+- Linux SOCK_DGRAM/IPPROTO_ICMP used for Echo
+- guest ICMP identifier restored on receive
+- synthetic IPv4 header supplied to classic raw-socket caller
+- IP and ICMP checksums validated
+- non-ICMP raw sockets remain refused
+
+ACTCPTools timing:
+- ping/traceroute use integer microseconds
+- EClock remainder multiplication uses a 64-bit intermediate
+- no floating-point helper or mathieeedoubbas.library dependency
