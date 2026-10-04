@@ -1,8 +1,9 @@
-/* ACNet bsdsocket.library: DNS, hostname and service lookups. BSD-3-Clause. */
+/* ACNet bsdsocket.library: DNS, hostname and service lookups. MIT. */
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <acnetwork.h>
 #include "lib_internal.h"
 
 static ULONG slen(const char*s,ULONG max){ULONG n=0;if(!s)return 0;while(n<max&&s[n])n++;return n;}
@@ -25,9 +26,40 @@ static struct servent *service(struct SocketBase *sb,STRPTR name,LONG port,STRPT
  UBYTE tx[128],rx[64];ULONG n=0,p=0,k=0;if(name){while(name[k]&&p<62)tx[p++]=name[k++];}tx[p++]=0;k=0;if(proto){while(proto[k]&&p<126)tx[p++]=proto[k++];}tx[p++]=0;
  LONG r=prov_call(sb,ACHS_CMD_SERVICE,(ULONG)port,sizeof(rx),0,0,tx,p,rx,sizeof(rx),&n);if(r<0)return NULL;scopy(sb->sname,(char*)rx,sizeof(sb->sname));scopy(sb->sproto,proto?(char*)proto:"",sizeof(sb->sproto));sb->sent.s_name=sb->sname;sb->sent.s_aliases=(STRPTR*)sb->hnull;sb->sent.s_port=(int)r;sb->sent.s_proto=sb->sproto;return &sb->sent;
 }
+
+static struct netent *network_lookup(struct SocketBase *sb, ULONG cmd, STRPTR name, in_addr_t net)
+{
+ UBYTE rx[96]; ULONG n=0,i=0; LONG r; const void *tx=NULL; ULONG txlen=0;
+ if(name){tx=name;txlen=slen((char*)name,63)+1;}
+ r=prov_call(sb,cmd,(ULONG)net,0,0,0,tx,txlen,rx,sizeof(rx),&n);
+ if(r<0){set_herrno(sb,(LONG)sb->last_err);return NULL;}
+ while(i<n&&rx[i])i++;
+ if(i>=n||i+5>n){set_herrno(sb,AH_NO_RECOVERY);return NULL;}
+ scopy(sb->nname,(char*)rx,sizeof(sb->nname));
+ sb->naliases[0]=NULL;
+ sb->nent.n_name=sb->nname;
+ sb->nent.n_aliases=(STRPTR*)sb->naliases;
+ sb->nent.n_addrtype=AF_INET;
+ CopyMem(rx+i+1,&sb->nent.n_net,4);
+ set_herrno(sb,0);
+ return &sb->nent;
+}
+struct netent *bsd_getnetbyname(struct SocketBase *sb,STRPTR name)
+{
+ if(!name){set_herrno(sb,AH_HOST_NOT_FOUND);return NULL;}
+ return network_lookup(sb,ACHS_CMD_NET_BY_NAME,name,0);
+}
+struct netent *bsd_getnetbyaddr(struct SocketBase *sb,in_addr_t net,LONG type)
+{
+ if(type!=AF_INET){set_herrno(sb,AH_NO_RECOVERY);return NULL;}
+ return network_lookup(sb,ACHS_CMD_NET_BY_ADDR,NULL,net);
+}
+
 struct servent *bsd_getservbyname(struct SocketBase *sb,STRPTR name,STRPTR proto){return service(sb,name,0,proto);}
 struct servent *bsd_getservbyport(struct SocketBase *sb,LONG port,STRPTR proto){return service(sb,NULL,port,proto);}
 
-struct protoent *bsd_getprotobyname(struct SocketBase *sb,STRPTR name){if(!name)return NULL;LONG p=0;if((name[0]=='t'||name[0]=='T')&&(name[1]=='c'||name[1]=='C')&&(name[2]=='p'||name[2]=='P')&&!name[3])p=6;else if((name[0]=='u'||name[0]=='U')&&(name[1]=='d'||name[1]=='D')&&(name[2]=='p'||name[2]=='P')&&!name[3])p=17;else return NULL;sb->pent.p_name=p==6?(char*)"tcp":(char*)"udp";sb->pent.p_aliases=(STRPTR*)sb->hnull;sb->pent.p_proto=p;return &sb->pent;}
-struct protoent *bsd_getprotobynumber(struct SocketBase *sb,LONG p){return p==6?bsd_getprotobyname(sb,(STRPTR)"tcp"):p==17?bsd_getprotobyname(sb,(STRPTR)"udp"):NULL;}
+struct protoent *bsd_getprotobyname(struct SocketBase *sb,STRPTR name){if(!name)return NULL;LONG p=0;if((name[0]=='i'||name[0]=='I')&&(name[1]=='c'||name[1]=='C')&&(name[2]=='m'||name[2]=='M')&&(name[3]=='p'||name[3]=='P')&&!name[4])p=1;else if((name[0]=='t'||name[0]=='T')&&(name[1]=='c'||name[1]=='C')&&(name[2]=='p'||name[2]=='P')&&!name[3])p=6;else if((name[0]=='u'||name[0]=='U')&&(name[1]=='d'||name[1]=='D')&&(name[2]=='p'||name[2]=='P')&&!name[3])p=17;else return NULL;sb->pent.p_name=p==1?(char*)"icmp":p==6?(char*)"tcp":(char*)"udp";sb->pent.p_aliases=(STRPTR*)sb->hnull;sb->pent.p_proto=p;return &sb->pent;}
+struct protoent *bsd_getprotobynumber(struct SocketBase *sb,LONG p){return p==1?bsd_getprotobyname(sb,(STRPTR)"icmp"):p==6?bsd_getprotobyname(sb,(STRPTR)"tcp"):p==17?bsd_getprotobyname(sb,(STRPTR)"udp"):NULL;}
 LONG bsd_gethostname(struct SocketBase *sb,STRPTR name,LONG namelen){UBYTE rx[64];ULONG n=0;if(!name||namelen<=0)return fail(sb,AE_FAULT);LONG r=prov_call(sb,ACHS_CMD_HOSTNAME,0,0,0,0,NULL,0,rx,sizeof(rx),&n);if(r<0)return fail_provider(sb);scopy(name,(char*)rx,namelen);return 0;}
+
+in_addr_t bsd_gethostid(struct SocketBase *sb){struct ACNetworkInterface rows[16];ULONG n=0,id=0;LONG r=prov_call(sb,ACNETWORK_CMD_INTERFACES,16,0,0,0,NULL,0,rows,sizeof(rows),&n);LONG i,count;if(r<0){fail_provider(sb);return 0;}count=r;if((ULONG)count>n/sizeof(rows[0]))count=n/sizeof(rows[0]);for(i=0;i<count;i++){if(rows[i].ipv4[0]&&rows[i].ipv4[0]!=127){CopyMem(rows[i].ipv4,&id,4);set_errno(sb,0);return id;}}if(count>0)CopyMem(rows[0].ipv4,&id,4);set_errno(sb,0);return id;}

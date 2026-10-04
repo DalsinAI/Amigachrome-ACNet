@@ -1,7 +1,7 @@
 /*
  * ACNet bsdsocket.library qualification harness.
  * Runs inside AmigaOS 3.2.3 against the published bsdsocket ABI.
- * BSD-3-Clause.
+ * MIT.
  */
 #include <exec/types.h>
 #include <exec/libraries.h>
@@ -16,6 +16,7 @@
 #include <netdb.h>
 #include <stdio.h>
 #include <string.h>
+#include "acnet_stack.h"
 
 struct Library *SocketBase;
 
@@ -24,6 +25,7 @@ static int passes, failures;
 static void result(const char *name, int ok)
 {
     printf("%-36s %s\n", name, ok ? "PASS" : "FAIL");
+    fflush(stdout);
     if (ok) passes++; else failures++;
 }
 
@@ -50,6 +52,10 @@ static void test_basics(void)
         result("gethostbyaddr localhost", rev != NULL);
     } else result("gethostbyaddr localhost", 0);
 
+    pe = getprotobyname("icmp");
+    result("getprotobyname icmp", pe && pe->p_proto == 1);
+    pe = getprotobynumber(1);
+    result("getprotobynumber icmp", pe && pe->p_proto == 1);
     pe = getprotobyname("tcp");
     result("getprotobyname tcp", pe && pe->p_proto == 6);
     pe = getprotobynumber(17);
@@ -252,10 +258,11 @@ static void test_churn(void)
     result("128 socket open/close cycles", ok);
 }
 
-int main(void)
+static int bsdqual_main(int argc, char **argv)
 {
-    printf("ACNet bsdsocket.library qualification\n");
+    printf("OpenSocket bsdsocket.library qualification\n");
     printf("====================================\n");
+    fflush(stdout);
 
     SocketBase=OpenLibrary("bsdsocket.library",4);
     if(!SocketBase) {
@@ -275,4 +282,11 @@ int main(void)
     printf("PASS=%d FAIL=%d\n",passes,failures);
     CloseLibrary(SocketBase);
     return failures ? 20 : 0;
+}
+
+/* 32 KB: WaitSelect runs about 1.3 KB deep in the library, on this task's
+ * stack; a 4 KB Shell stack should not decide a qualification run. */
+int main(int argc, char **argv)
+{
+    return acnet_main_with_stack(bsdqual_main, argc, argv, 32768);
 }

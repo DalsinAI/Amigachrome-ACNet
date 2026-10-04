@@ -1,18 +1,20 @@
 /*
- * ACNetControlGT - the ACNet Commodity in GadTools, for AmigaOS 2.04 to 3.2.
+ * OpenSocketControl - the OpenSocket Commodity, in GadTools (AmigaOS 2.04
+ * and later; AmigaOS 3.x programs are GadTools or MUI).
  *
- * The same five pages as the ReAction ACNetControl (acnetcontrol_core.c),
- * for machines without ReAction. GadTools has no tabs, so the pages are a
- * radio list down the left, as the classic Prefs editors do it; each page
- * is drawn as ridged groups with its lines and buttons. The window follows
- * the screen's font (Topaz 8 when that would not fit the screen) and can
- * be resized. Closing it hides the Commodity; networking never depends on
- * it.
+ * Five pages from acnetcontrol_core.c: Status, Wi-Fi, Connections,
+ * Diagnostics and Log. GadTools has no tabs, so the pages are a radio list
+ * down the left, as the classic Prefs editors do it; each page is drawn as
+ * ridged groups with their lines, input fields, a list and buttons. While
+ * the window is active the page refreshes itself every 3 seconds. The
+ * window follows the screen's font (Topaz 8 when that would not fit the
+ * screen) and can be resized. Closing it hides the Commodity; networking
+ * never depends on it.
  *
- * Keys: Tab and Shift-Tab change page, 1 to 5 pick one, Esc hides, and
- * the underlined letters press buttons.
+ * Keys: Tab and Shift-Tab change page, 1 to 5 pick one, Esc hides, and the
+ * underlined letters press buttons.
  *
- * BSD-3-Clause.
+ * MIT.
  */
 #include <exec/types.h>
 #include <exec/libraries.h>
@@ -35,15 +37,16 @@
 
 struct Library *GadToolsBase;
 
-#define VERSION_TEXT "ACNetControlGT 1.0 (4.10.2026)"
+#define VERSION_TEXT "OpenSocketControl 1.0 (4.10.2026)"
 static const char version[] __attribute__((used)) = "$VER: " VERSION_TEXT;
 
-enum { GID_PAGES = GID_FIRST_FREE, GID_STATUS };
+enum { GID_PAGES = GID_FIRST_FREE, GID_STATUS, GID_COUNT };
 enum { M_ABOUT = 1, M_HIDE, M_QUIT };
 
 #define PAD     6       /* between groups, and between buttons */
 #define INSET   10      /* from a group's ridge to its text */
 #define MARGIN  8       /* inside the window's borders */
+#define TICKS   30      /* IntuiTicks between refreshes: about 3 s */
 
 static struct NewMenu menus[] = {
     { NM_TITLE, "Project", NULL, 0, 0, NULL },
@@ -68,6 +71,8 @@ static int page;
 static int fh, line_h, btn_h, mx_w, title_band;
 static int nat_w, nat_h;            /* the page area every page fits in */
 static BOOL quit_now;
+static struct Gadget *gad[GID_COUNT];   /* the page's gadgets by id */
+static int ticks;
 
 static struct TextAttr topaz8 = { "topaz.font", 8, FS_NORMAL, FPF_ROMFONT };
 
@@ -87,14 +92,37 @@ static int button_w(const ACNCButton *b)
     return text_w(b->label) + 2 * 8;
 }
 
+static int field_label_w(const ACNCGroup *g)
+{
+    int i, w = 0;
+    for (i = 0; i < ACNC_MAX_FIELDS && g->field[i].id; ++i)
+        if (text_w(g->field[i].label) > w) w = text_w(g->field[i].label);
+    return w;
+}
+
+static int list_h(const ACNCGroup *g)
+{
+    return g->list_rows * (fh + 1) + 4;
+}
+
 static void group_natural(const ACNCGroup *g, int *w, int *h)
 {
-    int i, gw = text_w(g->title) + 4 * PAD, gh = title_band + PAD, row = 0;
+    int i, gw = text_w(g->title) + 4 * PAD, gh = title_band + PAD, row = 0, cw = font->tf_XSize;
     /* widths below are the group's: its text plus INSET each side */
     for (i = 0; i < ACNC_MAX_LINES && g->line[i]; ++i) {
         int tw = text_w(g->line[i]);
         if (tw > gw - 2 * INSET) gw = tw + 2 * INSET;
         gh += line_h;
+    }
+    for (i = 0; i < ACNC_MAX_FIELDS && g->field[i].id; ++i) {
+        int fw = field_label_w(g) + 8 + g->field[i].chars * cw + 12;
+        if (fw > gw - 2 * INSET) gw = fw + 2 * INSET;
+        gh += PAD + btn_h;
+    }
+    if (g->list_id) {
+        int lw = g->list_chars * cw + 24;
+        if (lw > gw - 2 * INSET) gw = lw + 2 * INSET;
+        gh += PAD + list_h(g);
     }
     for (i = 0; i < ACNC_MAX_BUTTONS && g->button[i].id; ++i) {
         if (g->buttons_in_a_row) {
@@ -204,6 +232,7 @@ static struct Gadget *make_gadgets(void)
     int i, k;
 
     glist = NULL;
+    memset(gad, 0, sizeof(gad));
     g = CreateContext(&glist);
     if (!g) return NULL;
     inner(&a);
@@ -227,6 +256,33 @@ static struct Gadget *make_gadgets(void)
         int lines = 0, x = ga[k].x + INSET, y;
         while (lines < ACNC_MAX_LINES && grp->line[lines]) ++lines;
         y = ga[k].y + title_band + PAD + lines * line_h;
+        for (i = 0; i < ACNC_MAX_FIELDS && grp->field[i].id; ++i) {
+            const ACNCField *f = &grp->field[i];
+            int lw = field_label_w(grp) + 8;
+            ng.ng_LeftEdge = x + lw;
+            ng.ng_TopEdge = y + PAD;
+            ng.ng_Width = f->chars * font->tf_XSize + 12;
+            ng.ng_Height = btn_h;
+            ng.ng_GadgetText = (UBYTE *)f->label;
+            ng.ng_GadgetID = f->id;
+            ng.ng_Flags = PLACETEXT_LEFT;
+            g = CreateGadget(STRING_KIND, g, &ng, GTST_String, (ULONG)f->buf, GTST_MaxChars, f->size - 1, TAG_DONE);
+            if (f->id < GID_COUNT) gad[f->id] = g;
+            y += PAD + btn_h;
+        }
+        if (grp->list_id) {
+            ng.ng_LeftEdge = x;
+            ng.ng_TopEdge = y + PAD;
+            ng.ng_Width = ga[k].w - 2 * INSET;
+            ng.ng_Height = list_h(grp);
+            ng.ng_GadgetText = NULL;
+            ng.ng_GadgetID = grp->list_id;
+            ng.ng_Flags = 0;
+            g = CreateGadget(LISTVIEW_KIND, g, &ng, GTLV_Labels, (ULONG)acnc_list(grp->list_id),
+                             GTLV_ReadOnly, grp->list_id != GID_L_WIFI, TAG_DONE);
+            if (grp->list_id < GID_COUNT) gad[grp->list_id] = g;
+            y += PAD + list_h(grp);
+        }
         for (i = 0; i < ACNC_MAX_BUTTONS && grp->button[i].id; ++i) {
             ng.ng_LeftEdge = x;
             ng.ng_TopEdge = y + PAD;
@@ -250,6 +306,7 @@ static struct Gadget *make_gadgets(void)
     ng.ng_Flags = 0;
     g = CreateGadget(TEXT_KIND, g, &ng, GTTX_Text, (ULONG)acnc_status_line(), GTTX_Border, TRUE,
                      GTTX_CopyText, TRUE, TAG_DONE);
+    gad[GID_STATUS] = g;
     return g;
 }
 
@@ -268,6 +325,16 @@ static void say(struct RastPort *rp, int x, int y, const char *s, UWORD pen)
     SetAPen(rp, pen);
     Move(rp, x, y + font->tf_Baseline);
     Text(rp, (STRPTR)s, strlen(s));
+}
+
+/* A line that may have grown since the window was measured: cut to fit. */
+static void say_in(struct RastPort *rp, int x, int y, int w, const char *s, UWORD pen)
+{
+    struct TextExtent te;
+    ULONG n = TextFit(rp, (STRPTR)s, strlen(s), &te, NULL, 1, w, fh + 1);
+    SetAPen(rp, pen);
+    Move(rp, x, y + font->tf_Baseline);
+    Text(rp, (STRPTR)s, n);
 }
 
 /* What is not a gadget: the heading and the page's groups. */
@@ -298,14 +365,72 @@ static void draw_static(void)
         RectFill(rp, ga[k].x + (ga[k].w - tw) / 2 - 4, ga[k].y, ga[k].x + (ga[k].w + tw) / 2 + 3, ga[k].y + fh - 1);
         say(rp, ga[k].x + (ga[k].w - tw) / 2, ga[k].y, grp->title, text);
         for (i = 0; i < ACNC_MAX_LINES && grp->line[i]; ++i)
-            say(rp, ga[k].x + INSET, ga[k].y + title_band + PAD + i * line_h, grp->line[i], text);
+            say_in(rp, ga[k].x + INSET, ga[k].y + title_band + PAD + i * line_h, ga[k].w - 2 * INSET,
+                   grp->line[i], text);
     }
     if (dri) FreeScreenDrawInfo(scr, dri);
+}
+
+/* What a refresh changes, without rebuilding the page: the lines, the lists
+ * and the status bar. */
+static void live_update(void)
+{
+    struct RastPort *rp = win->RPort;
+    struct DrawInfo *dri = GetScreenDrawInfo(scr);
+    UWORD text = dri ? dri->dri_Pens[TEXTPEN] : 1, back = dri ? dri->dri_Pens[BACKGROUNDPEN] : 0;
+    struct Zone pa, ga[2];
+    int k, i;
+
+    page_area(&pa);
+    group_areas(&pa, ga);
+    SetFont(rp, font);
+    SetDrMd(rp, JAM1);
+    for (k = 0; k < acnc_page[page].groups; ++k) {
+        const ACNCGroup *grp = &acnc_page[page].group[k];
+        for (i = 0; i < ACNC_MAX_LINES && grp->line[i]; ++i) {
+            int y = ga[k].y + title_band + PAD + i * line_h;
+            SetAPen(rp, back);
+            RectFill(rp, ga[k].x + INSET, y, ga[k].x + ga[k].w - INSET - 1, y + line_h - 1);
+            say_in(rp, ga[k].x + INSET, y, ga[k].w - 2 * INSET, grp->line[i], text);
+        }
+        if (grp->list_id && grp->list_id < GID_COUNT && gad[grp->list_id]) {
+            GT_SetGadgetAttrs(gad[grp->list_id], win, NULL, GTLV_Labels, ~0UL, TAG_DONE);
+            GT_SetGadgetAttrs(gad[grp->list_id], win, NULL, GTLV_Labels, (ULONG)acnc_list(grp->list_id), TAG_DONE);
+        }
+    }
+    if (gad[GID_STATUS])
+        GT_SetGadgetAttrs(gad[GID_STATUS], win, NULL, GTTX_Text, (ULONG)acnc_status_line(), TAG_DONE);
+    if (dri) FreeScreenDrawInfo(scr, dri);
+}
+
+static const ACNCField *find_field(ULONG id)
+{
+    int k, i;
+    for (k = 0; k < acnc_page[page].groups; ++k)
+        for (i = 0; i < ACNC_MAX_FIELDS && acnc_page[page].group[k].field[i].id; ++i)
+            if (acnc_page[page].group[k].field[i].id == id) return &acnc_page[page].group[k].field[i];
+    return NULL;
+}
+
+/* What was typed into the page's fields, into the core's buffers. */
+static void copy_fields(void)
+{
+    int k, i;
+    for (k = 0; k < acnc_page[page].groups; ++k)
+        for (i = 0; i < ACNC_MAX_FIELDS && acnc_page[page].group[k].field[i].id; ++i) {
+            const ACNCField *f = &acnc_page[page].group[k].field[i];
+            struct Gadget *g = f->id < GID_COUNT ? gad[f->id] : NULL;
+            if (g && g->SpecialInfo) {
+                strncpy(f->buf, (char *)((struct StringInfo *)g->SpecialInfo)->Buffer, f->size - 1);
+                f->buf[f->size - 1] = 0;
+            }
+        }
 }
 
 /* Builds the gadgets for the current page and size, and draws it all. */
 static void redo(void)
 {
+    if (glist) copy_fields();                    /* keep what was being typed */
     if (glist) {
         RemoveGList(win, glist, -1);
         FreeGadgets(glist);
@@ -354,32 +479,61 @@ static void show_window(void)
     w = 2 * MARGIN + mx_w + MARGIN + nat_w;
     h = 2 * MARGIN + line_h + PAD + nat_h + PAD + line_h + 4;
     win = OpenWindowTags(NULL,
-        WA_Title, (ULONG)"ACNetControl",
-        WA_ScreenTitle, (ULONG)"ACNet - AmigaChrome networking",
+        WA_Title, (ULONG)"OpenSocketControl",
+        WA_ScreenTitle, (ULONG)"OpenSocket - networking for the Amiga",
         WA_PubScreen, (ULONG)scr,
         WA_InnerWidth, w, WA_InnerHeight, h,
         WA_Left, (scr->Width - w) / 2, WA_Top, (scr->Height - h) / 2,
         WA_Activate, TRUE, WA_DragBar, TRUE, WA_DepthGadget, TRUE, WA_CloseGadget, TRUE,
         WA_SizeGadget, TRUE, WA_SizeBBottom, TRUE, WA_SmartRefresh, TRUE, WA_NewLookMenus, TRUE,
         WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_MENUPICK | IDCMP_VANILLAKEY |
-                  IDCMP_REFRESHWINDOW | IDCMP_NEWSIZE | MXIDCMP | BUTTONIDCMP | TEXTIDCMP,
+                  IDCMP_REFRESHWINDOW | IDCMP_NEWSIZE | IDCMP_INTUITICKS | MXIDCMP | BUTTONIDCMP |
+                  TEXTIDCMP | STRINGIDCMP | LISTVIEWIDCMP,
         TAG_DONE);
     if (!win) { hide_window(); return; }
     WindowLimits(win, win->Width, win->Height, ~0, ~0);   /* never smaller than the pages need */
     if (menu) SetMenuStrip(win, menu);
+    acnc_refresh(NULL);
     redo();
 }
 
 static void set_page(int p)
 {
+    if (glist) copy_fields();
     page = (p + ACNC_PAGES) % ACNC_PAGES;
+    acnc_refresh(NULL);
     if (win) redo();
+}
+
+static BOOL confirm(const char *text)
+{
+    struct EasyStruct es = { sizeof(struct EasyStruct), 0, "OpenSocketControl", (UBYTE *)text, "Proceed|Cancel" };
+    return EasyRequestArgs(win, &es, NULL, NULL) == 1;
+}
+
+static void busy(BOOL on)
+{
+    if (win && ((struct Library *)IntuitionBase)->lib_Version >= 39) {
+        if (on) SetWindowPointer(win, WA_BusyPointer, TRUE, TAG_DONE);
+        else SetWindowPointer(win, TAG_DONE);
+    }
+}
+
+/* A button, by id: the fields first, then the core runs it. */
+static void press(ULONG id)
+{
+    BOOL changed;
+    copy_fields();
+    busy(TRUE);
+    changed = acnc_press(id, confirm);
+    busy(FALSE);
+    if (changed && win) redo();
 }
 
 static void about(void)
 {
-    struct EasyStruct es = { sizeof(struct EasyStruct), 0, "ACNetControl",
-        VERSION_TEXT "\n\nThe ACNet Commodity in GadTools.\nNetworking runs without it.", "OK" };
+    struct EasyStruct es = { sizeof(struct EasyStruct), 0, "OpenSocketControl",
+        VERSION_TEXT "\n\nThe OpenSocket Commodity.\nNetworking runs without it.", "OK" };
     EasyRequestArgs(win, &es, NULL, NULL);
 }
 
@@ -405,8 +559,10 @@ static void shortcut(UWORD key)
         for (i = 0; i < ACNC_MAX_BUTTONS && acnc_page[page].group[k].button[i].id; ++i) {
             const ACNCButton *b = &acnc_page[page].group[k].button[i];
             const char *u = strchr(b->label, '_');
-            if (u && !b->disabled && (u[1] | 0x20) == (key | 0x20))
-                return;     /* first light: the buttons have no backend yet */
+            if (u && !b->disabled && (u[1] | 0x20) == (key | 0x20)) {
+                press(b->id);
+                return;
+            }
         }
 }
 
@@ -424,7 +580,7 @@ static void window_events(void)
     while (win && (im = GT_GetIMsg(win->UserPort)) != NULL) {
         ULONG class = im->Class;
         UWORD code = im->Code, qualifier = im->Qualifier;
-        struct Gadget *gad = (struct Gadget *)im->IAddress;
+        struct Gadget *g = (struct Gadget *)im->IAddress;
         GT_ReplyIMsg(im);
         switch (class) {
             case IDCMP_CLOSEWINDOW: hide_window(); break;
@@ -435,11 +591,28 @@ static void window_events(void)
                 break;
             case IDCMP_NEWSIZE: redo(); break;
             case IDCMP_GADGETDOWN:
-                if (gad->GadgetID == GID_PAGES && code != page) set_page(code);
+                if (g->GadgetID == GID_PAGES && code != page) set_page(code);
                 break;
             case IDCMP_GADGETUP:
-                /* The first-light UI has real controls only where their
-                 * backends already exist. */
+                if (g->GadgetID == GID_L_WIFI) {            /* a network picked: its name */
+                    const ACNCField *f = find_field(GID_F_WIFI_SSID);
+                    if (acnc_pick(GID_L_WIFI, code) && f && gad[GID_F_WIFI_SSID])
+                        GT_SetGadgetAttrs(gad[GID_F_WIFI_SSID], win, NULL, GTST_String, (ULONG)f->buf, TAG_DONE);
+                } else if (g->GadgetID >= GID_F_WIFI_SSID && g->GadgetID <= GID_F_DIAG_PORT) {
+                    copy_fields();                          /* typed; a button runs it */
+                } else if (g->GadgetID > GID_TABS && g->GadgetID < GID_F_WIFI_SSID) {
+                    press(g->GadgetID);
+                }
+                break;
+            case IDCMP_INTUITICKS:                          /* only while the window is active */
+                if (++ticks >= TICKS) {
+                    BOOL state;
+                    ticks = 0;
+                    if (acnc_refresh(&state)) {
+                        if (state) redo();                  /* Go online/offline's label */
+                        else live_update();
+                    }
+                }
                 break;
             case IDCMP_MENUPICK: menu_pick(code); break;
             case IDCMP_VANILLAKEY: key(code, qualifier); break;
@@ -454,16 +627,17 @@ static int control_main(void)
 
     GadToolsBase = OpenLibrary("gadtools.library", 37);
     if (!GadToolsBase) {
-        PutStr("ACNetControlGT: needs gadtools.library 37 (AmigaOS 2.04 or later).\n");
+        PutStr("OpenSocketControl: needs gadtools.library 37 (AmigaOS 2.04 or later).\n");
         return 20;
     }
     for (i = 0; i < ACNC_PAGES; ++i) page_names[i] = (STRPTR)acnc_page[i].name;
-    acnc_read_state();
+    acnc_open();
     i = acnc_broker_open();
     if (i != 1) {
         /* ACNC_ALREADY_RUNNING: Exchange has told that copy to show itself. */
-        if (i != ACNC_ALREADY_RUNNING) PutStr("ACNetControlGT: could not start the Commodity.\n");
+        if (i != ACNC_ALREADY_RUNNING) PutStr("OpenSocketControl: could not start the Commodity.\n");
         acnc_broker_close();
+        acnc_close();
         CloseLibrary(GadToolsBase);
         return i == ACNC_ALREADY_RUNNING ? 5 : 20;
     }
@@ -479,6 +653,7 @@ static int control_main(void)
 
     hide_window();
     acnc_broker_close();
+    acnc_close();
     CloseLibrary(GadToolsBase);
     return 0;
 }

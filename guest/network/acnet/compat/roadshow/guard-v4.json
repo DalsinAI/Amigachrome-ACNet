@@ -1,47 +1,156 @@
 {
   "name": "Known legacy bsdsocket extension guard tail",
+  "includes": [
+    "<exec/lists.h>",
+    "<utility/tagitem.h>",
+    "<net/route.h>"
+  ],
   "first_slot": 57,
   "last_slot": 139,
   "slots": [
     {
       "slot": 57,
       "name": "bpf_open",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "channel",
+          "d0"
+        ]
+      ]
     },
     {
       "slot": 58,
       "name": "bpf_close",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "channel",
+          "d0"
+        ]
+      ]
     },
     {
       "slot": 59,
       "name": "bpf_read",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "channel",
+          "d0"
+        ],
+        [
+          "APTR",
+          "buffer",
+          "a0"
+        ],
+        [
+          "LONG",
+          "len",
+          "d1"
+        ]
+      ]
     },
     {
       "slot": 60,
       "name": "bpf_write",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "channel",
+          "d0"
+        ],
+        [
+          "APTR",
+          "buffer",
+          "a0"
+        ],
+        [
+          "LONG",
+          "len",
+          "d1"
+        ]
+      ]
     },
     {
       "slot": 61,
       "name": "bpf_set_notify_mask",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "channel",
+          "d1"
+        ],
+        [
+          "ULONG",
+          "signal_mask",
+          "d0"
+        ]
+      ]
     },
     {
       "slot": 62,
       "name": "bpf_set_interrupt_mask",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "channel",
+          "d0"
+        ],
+        [
+          "ULONG",
+          "signal_mask",
+          "d1"
+        ]
+      ]
     },
     {
       "slot": 63,
       "name": "bpf_ioctl",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "channel",
+          "d0"
+        ],
+        [
+          "ULONG",
+          "command",
+          "d1"
+        ],
+        [
+          "APTR",
+          "buffer",
+          "a0"
+        ]
+      ]
     },
     {
       "slot": 64,
       "name": "bpf_data_waiting",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "channel",
+          "d0"
+        ]
+      ]
     },
     {
       "slot": 65,
@@ -61,12 +170,33 @@
     {
       "slot": 68,
       "name": "FreeRouteInfo",
-      "kind": "void"
+      "kind": "void",
+      "ret": "VOID",
+      "args": [
+        [
+          "struct rt_msghdr *",
+          "buf",
+          "a0"
+        ]
+      ]
     },
     {
       "slot": 69,
       "name": "GetRouteInfo",
-      "kind": "ptr"
+      "kind": "ptr",
+      "ret": "struct rt_msghdr *",
+      "args": [
+        [
+          "LONG",
+          "address_family",
+          "d0"
+        ],
+        [
+          "LONG",
+          "flags",
+          "d1"
+        ]
+      ]
     },
     {
       "slot": 70,
@@ -81,17 +211,40 @@
     {
       "slot": 72,
       "name": "ReleaseInterfaceList",
-      "kind": "void"
+      "kind": "void",
+      "ret": "VOID",
+      "args": [
+        [
+          "struct List *",
+          "list",
+          "a0"
+        ]
+      ]
     },
     {
       "slot": 73,
       "name": "ObtainInterfaceList",
-      "kind": "ptr"
+      "kind": "ptr",
+      "ret": "struct List *",
+      "args": []
     },
     {
       "slot": 74,
       "name": "QueryInterfaceTagList",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "STRPTR",
+          "name",
+          "a0"
+        ],
+        [
+          "struct TagItem *",
+          "tags",
+          "a1"
+        ]
+      ]
     },
     {
       "slot": 75,
@@ -126,7 +279,30 @@
     {
       "slot": 81,
       "name": "GetNetworkStatistics",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "type",
+          "d0"
+        ],
+        [
+          "LONG",
+          "version",
+          "d1"
+        ],
+        [
+          "APTR",
+          "destination",
+          "a0"
+        ],
+        [
+          "LONG",
+          "size",
+          "d2"
+        ]
+      ]
     },
     {
       "slot": 82,
@@ -141,12 +317,22 @@
     {
       "slot": 84,
       "name": "ReleaseDomainNameServerList",
-      "kind": "void"
+      "kind": "void",
+      "ret": "VOID",
+      "args": [
+        [
+          "struct List *",
+          "list",
+          "a0"
+        ]
+      ]
     },
     {
       "slot": 85,
       "name": "ObtainDomainNameServerList",
-      "kind": "ptr"
+      "kind": "ptr",
+      "ret": "struct List *",
+      "args": []
     },
     {
       "slot": 86,
@@ -196,27 +382,97 @@
     {
       "slot": 95,
       "name": "inet_aton",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "STRPTR",
+          "cp",
+          "a0"
+        ],
+        [
+          "struct in_addr *",
+          "addr",
+          "a1"
+        ]
+      ]
     },
     {
       "slot": 96,
       "name": "inet_ntop",
-      "kind": "ptr"
+      "kind": "ptr",
+      "ret": "STRPTR",
+      "args": [
+        [
+          "LONG",
+          "af",
+          "d0"
+        ],
+        [
+          "APTR",
+          "src",
+          "a0"
+        ],
+        [
+          "STRPTR",
+          "dst",
+          "a1"
+        ],
+        [
+          "LONG",
+          "size",
+          "d1"
+        ]
+      ]
     },
     {
       "slot": 97,
       "name": "inet_pton",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "LONG",
+          "af",
+          "d0"
+        ],
+        [
+          "STRPTR",
+          "src",
+          "a0"
+        ],
+        [
+          "APTR",
+          "dst",
+          "a1"
+        ]
+      ]
     },
     {
       "slot": 98,
       "name": "In_LocalAddr",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "in_addr_t",
+          "address",
+          "d0"
+        ]
+      ]
     },
     {
       "slot": 99,
       "name": "In_CanForward",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "in_addr_t",
+          "address",
+          "d0"
+        ]
+      ]
     },
     {
       "slot": 100,
@@ -316,12 +572,78 @@
     {
       "slot": 119,
       "name": "gethostbyname_r",
-      "kind": "ptr"
+      "kind": "ptr",
+      "ret": "struct hostent *",
+      "args": [
+        [
+          "STRPTR",
+          "name",
+          "a0"
+        ],
+        [
+          "struct hostent *",
+          "hp",
+          "a1"
+        ],
+        [
+          "APTR",
+          "buf",
+          "a2"
+        ],
+        [
+          "ULONG",
+          "buflen",
+          "d0"
+        ],
+        [
+          "LONG *",
+          "he",
+          "a3"
+        ]
+      ]
     },
     {
       "slot": 120,
       "name": "gethostbyaddr_r",
-      "kind": "ptr"
+      "kind": "ptr",
+      "ret": "struct hostent *",
+      "args": [
+        [
+          "STRPTR",
+          "addr",
+          "a0"
+        ],
+        [
+          "LONG",
+          "len",
+          "d0"
+        ],
+        [
+          "LONG",
+          "type",
+          "d1"
+        ],
+        [
+          "struct hostent *",
+          "hp",
+          "a1"
+        ],
+        [
+          "APTR",
+          "buf",
+          "a2"
+        ],
+        [
+          "ULONG",
+          "buflen",
+          "d2"
+        ],
+        [
+          "LONG *",
+          "he",
+          "a3"
+        ]
+      ]
     },
     {
       "slot": 121,
@@ -369,22 +691,99 @@
     {
       "slot": 130,
       "name": "freeaddrinfo",
-      "kind": "void"
+      "kind": "void",
+      "ret": "VOID",
+      "args": [
+        [
+          "struct addrinfo *",
+          "ai",
+          "a0"
+        ]
+      ]
     },
     {
       "slot": 131,
       "name": "getaddrinfo",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "STRPTR",
+          "hostname",
+          "a0"
+        ],
+        [
+          "STRPTR",
+          "servname",
+          "a1"
+        ],
+        [
+          "struct addrinfo *",
+          "hints",
+          "a2"
+        ],
+        [
+          "struct addrinfo **",
+          "res",
+          "a3"
+        ]
+      ]
     },
     {
       "slot": 132,
       "name": "gai_strerror",
-      "kind": "ptr"
+      "kind": "ptr",
+      "ret": "STRPTR",
+      "args": [
+        [
+          "LONG",
+          "errnum",
+          "a0"
+        ]
+      ]
     },
     {
       "slot": 133,
       "name": "getnameinfo",
-      "kind": "scalar"
+      "kind": "scalar",
+      "ret": "LONG",
+      "args": [
+        [
+          "struct sockaddr *",
+          "sa",
+          "a0"
+        ],
+        [
+          "ULONG",
+          "salen",
+          "d0"
+        ],
+        [
+          "STRPTR",
+          "host",
+          "a1"
+        ],
+        [
+          "ULONG",
+          "hostlen",
+          "d1"
+        ],
+        [
+          "STRPTR",
+          "serv",
+          "a2"
+        ],
+        [
+          "ULONG",
+          "servlen",
+          "d2"
+        ],
+        [
+          "ULONG",
+          "flags",
+          "d3"
+        ]
+      ]
     },
     {
       "slot": 134,

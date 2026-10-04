@@ -1,7 +1,7 @@
 /* ACNet's HostSocket provider: the Amiga's sockets carried out by the Linux
  * host, through acnet.device and the ACNet card. Each opener opens the
  * device and registers one waiter (its task and a signal of its own); the
- * device's interrupt signals it while armed. BSD-3-Clause. */
+ * device's interrupt signals it while armed. MIT. */
 #include <exec/memory.h>
 #include <exec/errors.h>
 #include <proto/exec.h>
@@ -32,7 +32,7 @@ LONG prov_open(struct SocketBase *sb)
 {
     sb->dev_io = AllocMem(sizeof(struct IOStdReq), MEMF_PUBLIC | MEMF_CLEAR);
     if (!sb->dev_io) return ENOMEM;
-    if (OpenDevice((STRPTR)ACNET_DEVICE_NAME, 0, (struct IORequest *)sb->dev_io, 0)) {
+    if (OPENSOCKET_OPEN_DEVICE(sb->dev_io)) {
         FreeMem(sb->dev_io, sizeof(struct IOStdReq));
         sb->dev_io = NULL;
         return ENETDOWN;
