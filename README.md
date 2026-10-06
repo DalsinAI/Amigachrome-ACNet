@@ -50,3 +50,7 @@ Inside the project, a few files keep their own licences:
 - lwIP, when OpenSocketDirect brings it in, keeps its own BSD licence and notice.
 
 AmigaOS/NDK material is not included and remains subject to its own licensing terms.
+
+## Contributors
+
+OpenSocket is created and maintained by [SacredTrees](https://github.com/SacredTrees) with the AmigaChrome agent team, copyright Dalsin Limited. Everyone whose work it includes is credited in [`CONTRIBUTORS.md`](CONTRIBUTORS.md).
