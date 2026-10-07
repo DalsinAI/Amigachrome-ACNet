@@ -101,4 +101,4 @@ Important: Instance-23's installed HostSocket/runtime is still older than the dr
 
 ## Restart rule
 
-Start by reading `docs/ACNET_DESIGN.md` and this capsule. Treat the native `acnetwork.library` API as authoritative; classic/Roadshow compatibility translates onto it. Do not reintroduce a second Amiga TCP/IP engine and do not grant unrestricted host raw sockets.
+Start by reading `docs/history/ACNET_DESIGN.md` and this capsule. Treat the native `acnetwork.library` API as authoritative; classic/Roadshow compatibility translates onto it. Do not reintroduce a second Amiga TCP/IP engine and do not grant unrestricted host raw sockets.

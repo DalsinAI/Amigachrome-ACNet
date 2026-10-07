@@ -33,7 +33,7 @@ The vector table is generated from the checked-in manifest `guest/network/acnet/
 
 ## Status
 
-See `STATUS.md`. The complete stack builds and passes its host-side tests; live qualification of the matched guest and host set on AmigaOS 3.2.3 comes next. Until then, treat it as alpha.
+The status log from 1 to 3 October is in `docs/history/STATUS.md`. The complete stack builds and passes its host-side tests; live qualification of the matched guest and host set on AmigaOS 3.2.3 comes next. Until then, treat it as alpha.
 
 ## AmigaChrome integration
 
