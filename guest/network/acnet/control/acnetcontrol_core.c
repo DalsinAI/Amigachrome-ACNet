@@ -55,7 +55,7 @@ static char st_network[LINE], st_card[LINE], st_host[LINE], st_iface[LINE], st_i
 static char tr_link[LINE], tr_sockets[LINE], tr_in[LINE], tr_out[LINE], tr_connects[LINE],
             tr_refused[LINE];
 static char toggle_label[24] = "_Go offline...";
-static char wifi_result[LINE] = "Rescan lists the networks the PC can see.";
+static char wifi_result[LINE] = "Rescan lists the networks Cradle can see.";
 static char diag_result[LINE] = "Ready.";
 static char status_bar[LINE];
 
@@ -93,10 +93,10 @@ const ACNCPage acnc_page[ACNC_PAGES] = {
           { tr_link, tr_sockets, tr_in, tr_out, tr_connects, tr_refused, NULL },
           { { 0 } }, 0, 0, 0, { { 0 } }, FALSE } } },
     { "Wi-Fi", 1, {
-        { "The PC's Wi-Fi",
-          { "Joins only networks this PC already knows;",
+        { "Cradle's Wi-Fi",
+          { "Joins only networks Cradle already knows;",
             "passphrases never pass through the Amiga.",
-            "Cradle's Host Wi-Fi control switch must be on.",
+            "Cradle's Network setting must include Wi-Fi.",
             wifi_result, NULL },
           { { GID_F_WIFI_SSID, "Network", wifi_ssid, sizeof(wifi_ssid), 24 }, { 0 } },
           GID_L_WIFI, 6, 56,
@@ -334,14 +334,14 @@ static void read_status(void)
     }
 
     if (have_st) {
-        sprintf(tr_link,     "Host link     %lu Mb/s", (unsigned long)st.link_mbps);
+        sprintf(tr_link,     "Link speed    %lu Mb/s", (unsigned long)st.link_mbps);
         sprintf(tr_sockets,  "Open sockets  %lu", (unsigned long)st.sockets);
         sprintf(tr_in,       "Total in      %llu bytes", st.bytes_in);
         sprintf(tr_out,      "Total out     %llu bytes", st.bytes_out);
         sprintf(tr_connects, "Connects      %lu", (unsigned long)st.connects);
         sprintf(tr_refused,  "Refused       %lu", (unsigned long)st.refused);
     } else {
-        strcpy(tr_link,     "Host link     unavailable");
+        strcpy(tr_link,     "Link speed    unavailable");
         strcpy(tr_sockets,  "Open sockets  unavailable");
         strcpy(tr_in,       "Total in      unavailable");
         strcpy(tr_out,      "Total out     unavailable");
@@ -430,7 +430,7 @@ static LONG wifi_call(ULONG command, const char *ssid, struct ACWiFiNetwork *row
         call.capacity = capacity;
         __asm volatile ("jsr -42(%%a6)" : "=r"(d0), "+r"(a0) : "r"(a6) : "d1", "a1", "cc", "memory");
         (void)d0;
-        if (call.error == 1) strcpy(wifi_result, "Host Wi-Fi control is off in Cradle.");
+        if (call.error == 1) strcpy(wifi_result, "Wi-Fi control is off in Cradle.");
         else if (call.error == 50) strcpy(wifi_result, "The network is off in Cradle.");
         else if (call.error == 4) strcpy(wifi_result, "The Wi-Fi request was interrupted.");
         else if (call.error) sprintf(wifi_result, "The Wi-Fi request failed (error %lu).", (unsigned long)call.error);
@@ -615,22 +615,22 @@ BOOL acnc_press(ULONG id, BOOL (*confirm)(const char *text))
             return TRUE;
         case GID_WIFI_JOIN:
             if (!wifi_ssid[0]) { strcpy(wifi_result, "Pick or type a network first."); return TRUE; }
-            if (!confirm("Join this network?\nIt changes the PC's own Wi-Fi connection.")) return FALSE;
+            if (!confirm("Join this network?\nIt changes Cradle's own Wi-Fi connection.")) return FALSE;
             if (wifi_call(ACWIFI_JOIN, wifi_ssid, NULL, 0) >= 0) {
                 count = wifi_call(ACWIFI_STATUS, NULL, &n, 1);
-                if (count > 0) sprintf(wifi_result, "The PC is on %s.", n.ssid);
-                else sprintf(wifi_result, "Asked the PC to join %s.", wifi_ssid);
+                if (count > 0) sprintf(wifi_result, "Cradle is on %s.", n.ssid);
+                else sprintf(wifi_result, "Asked Cradle to join %s.", wifi_ssid);
             }
             return TRUE;
         case GID_WIFI_LEAVE:
-            if (!confirm("Disconnect the PC's Wi-Fi?\nIt changes the PC's own network connection.")) return FALSE;
-            if (wifi_call(ACWIFI_LEAVE, NULL, NULL, 0) >= 0) strcpy(wifi_result, "The PC's Wi-Fi is disconnected.");
+            if (!confirm("Disconnect Cradle's Wi-Fi?\nIt changes Cradle's own network connection.")) return FALSE;
+            if (wifi_call(ACWIFI_LEAVE, NULL, NULL, 0) >= 0) strcpy(wifi_result, "Cradle's Wi-Fi is disconnected.");
             return TRUE;
         case GID_WIFI_FORGET:
             if (!wifi_ssid[0]) { strcpy(wifi_result, "Pick or type a network first."); return TRUE; }
-            if (!confirm("Forget this network?\nThe PC removes its saved profile.")) return FALSE;
+            if (!confirm("Forget this network?\nCradle removes its saved profile.")) return FALSE;
             if (wifi_call(ACWIFI_FORGET, wifi_ssid, NULL, 0) >= 0) {
-                sprintf(wifi_result, "The PC forgot %s.", wifi_ssid);
+                sprintf(wifi_result, "Cradle forgot %s.", wifi_ssid);
                 wifi_scan();
             }
             return TRUE;
