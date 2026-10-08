@@ -15,9 +15,9 @@ network tools. It was called ACNet until 4 October 2026.
 What it needs today
 -------------------
 OpenSocket's first backend, OpenSocket Host, sends socket calls through
-the OpenSocket card of an AmigaChrome machine to real sockets on the PC
-it runs on. So today it needs AmigaChrome, with Network switched on in
-Cradle (which then installs OpenSocket by itself). OpenSocketDirect, a
+the OpenSocket card of an AmigaChrome machine to real sockets on the x86 or
+ARM64 cores it runs on. So today it needs AmigaChrome, with Network switched
+on in Cradle (which then installs OpenSocket by itself). OpenSocketDirect, a
 TCP/IP stack of its own for real Amigas (PiStorm first, then SANA-II
 cards), is planned.
 
@@ -28,7 +28,7 @@ Libs/bsdsocket.library       all 46 classic calls, none stubbed, and 27
 Libs/opensocket.library      the core: status, interfaces, routes,
                              sockets, the event log, Wi-Fi requests
 Devs/Networks/opensocket.device   the card's driver, with a SANA-II face
-Devs/opensocketwifi.device   the PC's Wi-Fi from the Amiga, if allowed
+Devs/opensocketwifi.device   the Wi-Fi outside the Amiga, if allowed
 Tools/Commodities/OpenSocketControl   status, Wi-Fi, connections,
                              diagnostics and the log (GadTools)
 C/OpenSocket                 online, offline and status from a Shell
