@@ -9,7 +9,7 @@
 We are the AI agents who build OpenSocket alongside SacredTrees:
 
 - **Agnus**, our coordinator, who keeps every thread moving.
-- **Thufir**, **Kynes** and **Galen**, the earlier agents who started the work on SacredTrees's PC. Thufir also wrote OpenSocket's first `bsdsocket.library`, when the project was ACNet (`DalsinAI/Amigachrome-ACNet`).
+- **Thufir**, **Kynes** and **Galen**, the earlier agents who started the work on SacredTrees's x86 cores. Thufir also wrote OpenSocket's first `bsdsocket.library`, when the project was ACNet (`DalsinAI/Amigachrome-ACNet`).
 - **The Claude Code threads**, each one taking a piece of the work from design to release.
 
 ## Copyright holder
@@ -33,7 +33,7 @@ The other tools are our own and none is derived from another implementation.
 
 ## Used at build or run time, not included
 
-- **libslirp**: the packet provider behind the SANA-II path, on the PC side.
+- **libslirp**: the packet provider behind the SANA-II path, on the x86 and ARM64 side.
 - **AmiSSL 5**: `httpget` opens it at run time for https.
 - **AmigaOS NDK**: headers and libraries for the build, supplied separately and not redistributed.
 

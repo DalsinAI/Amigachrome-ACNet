@@ -2,7 +2,7 @@
 
 OpenSocket is a free (MIT) `bsdsocket.library` for AmigaOS 3.2.3: the classic Amiga socket interface, its core library, the card's driver, a Commodity and the standard network tools. It was called ACNet until 4 October 2026. The repository is `DalsinAI/openamigasocket` (it was `DalsinAI/Amigachrome-ACNet`; GitHub forwards the old address).
 
-Today it has one backend, OpenSocket Host: socket calls travel through the OpenSocket card (Zorro II, Dalsin product 6) in an AmigaChrome machine to real sockets on the PC. OpenSocketDirect, a TCP/IP stack of its own (lwIP) for real Amigas and PiStorm, is planned. The design is `docs/architecture/OPENSOCKET_DESIGN.md` in DalsinAI/amigachrome.
+Today it has one backend, OpenSocket Host: socket calls travel through the OpenSocket card (Zorro II, Dalsin product 6) in an AmigaChrome machine to real sockets on the x86 or ARM64 cores. OpenSocketDirect, a TCP/IP stack of its own (lwIP) for real Amigas and PiStorm, is planned. The design is `docs/architecture/OPENSOCKET_DESIGN.md` in DalsinAI/amigachrome.
 
 ## The parts
 
@@ -11,7 +11,7 @@ Today it has one backend, OpenSocket Host: socket calls travel through the OpenS
 | `bsdsocket.library` | `LIBS:` | The published socket interface: the 46 classic vectors (none stubbed) and 27 Roadshow-era calls after them (BPF, routes, modern IPv4 lookups). Its id string says OpenSocket. |
 | `opensocket.library` | `LIBS:` | OpenSocket's core: status, interfaces, routes, sockets, the event log, Wi-Fi requests. Everything else opens it. Was `acnetwork.library`. |
 | `opensocket.device` | `DEVS:Networks/` | The card's driver: private calls for sockets, and a SANA-II face for frames. Was `acnet.device`; programs that open it fall back to `acnet.device` on older installs. |
-| `opensocketwifi.device` | `DEVS:` | Control of the PC's Wi-Fi, by permission. Was `acwifi.device`. |
+| `opensocketwifi.device` | `DEVS:` | Control of the Wi-Fi outside the Amiga, by permission. Was `acwifi.device`. |
 | `OpenSocketControl` | `SYS:Tools/Commodities/` | The Commodity, in GadTools. Was ACNetControlGT; the ReAction ACNetControl is retired. |
 | `OpenSocket` | `C:` | Status, online, offline. Was `acnetctl`. |
 | ping, traceroute, arp, ifconfig, route, netstat, hostname, resolve | `SYS:Tools/OpenSocket/` | The standard network tools (ACTCPTools). Never put in `C:`, so another stack's commands are not overwritten. |
@@ -37,7 +37,7 @@ The status log from 1 to 3 October is in `docs/history/STATUS.md`. The complete 
 
 ## AmigaChrome integration
 
-The AmigaChrome runtime supplies the OpenSocket card, the HostSocket service on the PC, the Network switch and the installer that puts this payload on an instance. Those live in DalsinAI/amigachrome with the machine they depend on.
+The AmigaChrome runtime supplies the OpenSocket card, the HostSocket service on the x86 or ARM64 cores, the Network switch and the installer that puts this payload on an instance. Those live in DalsinAI/amigachrome with the machine they depend on.
 
 ## Licence and credit
 
