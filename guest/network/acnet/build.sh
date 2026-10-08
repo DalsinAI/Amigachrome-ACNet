@@ -20,7 +20,7 @@ ABI="$HERE/abi/bsdsocket-v4.json"
 GUARD="$HERE/compat/roadshow/guard-v4.json"
 OUT=${1:-$GUEST/build/guest/os32/acnet}
 mkdir -p "$OUT"
-BARE="-m68020 -O2 -include sys/types.h -fomit-frame-pointer -fno-toplevel-reorder -fno-builtin -Wall -Wno-pointer-sign -nostartfiles -nostdlib"
+BARE="-m68020 -O2 -fno-delete-null-pointer-checks -include sys/types.h -fomit-frame-pointer -fno-toplevel-reorder -fno-builtin -Wall -Wno-pointer-sign -nostartfiles -nostdlib"
 INC="-I$GUEST/common/protocol -I$HERE/include -I$GUEST/network/acnetwork/include"
 COMPAT_INC="-I$STOVE/ndk/SANA+RoadshowTCP-IP/include"
 
@@ -38,36 +38,36 @@ python3 "$HERE/library/gen_vectors.py" "$ABI" "$OUT/bsdsocket_vectors.c" $LIB --
 echo "$OUT/bsdsocket.library ($(wc -c < "$OUT/bsdsocket.library") bytes)"
 
 if [ -f "$HERE/tests/acnettest.c" ]; then
-    "$CC" -m68020 -O2 -Wall -noixemul -o "$OUT/acnettest" "$HERE/tests/acnettest.c"
+    "$CC" -m68020 -O2 -fno-delete-null-pointer-checks -Wall -noixemul -o "$OUT/acnettest" "$HERE/tests/acnettest.c"
     echo "$OUT/acnettest ($(wc -c < "$OUT/acnettest") bytes)"
 fi
 
 if [ -f "$HERE/tests/bsdqual.c" ]; then
-    "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul -I"$GUEST/common/os3" -o "$OUT/bsdqual" \
+    "$CC" -m68020 -O2 -fno-delete-null-pointer-checks -Wall -Wno-pointer-sign -noixemul -I"$GUEST/common/os3" -o "$OUT/bsdqual" \
         "$HERE/tests/bsdqual.c" "$GUEST/common/os3/acnet_stack.c"
     echo "$OUT/bsdqual ($(wc -c < "$OUT/bsdqual") bytes)"
 fi
 
 if [ -f "$HERE/tests/roadshow_readonly_probe.c" ]; then
-    "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul \
+    "$CC" -m68020 -O2 -fno-delete-null-pointer-checks -Wall -Wno-pointer-sign -noixemul \
         -o "$OUT/roadshow-readonly-probe" "$HERE/tests/roadshow_readonly_probe.c"
     echo "$OUT/roadshow-readonly-probe ($(wc -c < "$OUT/roadshow-readonly-probe") bytes)"
 fi
 
 if [ -f "$HERE/tests/modern_compat_probe.c" ]; then
-    "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul \
+    "$CC" -m68020 -O2 -fno-delete-null-pointer-checks -Wall -Wno-pointer-sign -noixemul \
         -o "$OUT/modern-compat-probe" "$HERE/tests/modern_compat_probe.c"
     echo "$OUT/modern-compat-probe ($(wc -c < "$OUT/modern-compat-probe") bytes)"
 fi
 
 if [ -f "$HERE/tests/bpfprobe.c" ]; then
-    "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul $COMPAT_INC \
+    "$CC" -m68020 -O2 -fno-delete-null-pointer-checks -Wall -Wno-pointer-sign -noixemul $COMPAT_INC \
         -o "$OUT/bpfprobe" "$HERE/tests/bpfprobe.c"
     echo "$OUT/bpfprobe ($(wc -c < "$OUT/bpfprobe") bytes)"
 fi
 
 if [ -f "$HERE/tests/sana2probe.c" ]; then
-    "$CC" -m68020 -O2 -Wall -Wno-pointer-sign -noixemul $INC $COMPAT_INC \
+    "$CC" -m68020 -O2 -fno-delete-null-pointer-checks -Wall -Wno-pointer-sign -noixemul $INC $COMPAT_INC \
         -o "$OUT/sana2probe" "$HERE/tests/sana2probe.c"
     echo "$OUT/sana2probe ($(wc -c < "$OUT/sana2probe") bytes)"
 fi
@@ -79,7 +79,7 @@ fi
 # -fno-common: the program's own library bases must win over libnix's
 # auto-open stubs.
 if [ -f "$HERE/control/acnetcontrol_gt.c" ]; then
-    "$CC" -m68000 -O2 -fno-common -Wall -Wno-pointer-sign -noixemul -I"$HERE/include" \
+    "$CC" -m68000 -O2 -fno-delete-null-pointer-checks -fno-common -Wall -Wno-pointer-sign -noixemul -I"$HERE/include" \
         -I"$GUEST/network/acnetwork/include" -I"$GUEST/network/acwifi/include" \
         -o "$OUT/OpenSocketControl" "$HERE/control/acnetcontrol_gt.c" "$HERE/control/acnetcontrol_core.c" -lamiga
     echo "$OUT/OpenSocketControl ($(wc -c < "$OUT/OpenSocketControl") bytes)"
