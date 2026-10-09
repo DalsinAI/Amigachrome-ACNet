@@ -50,7 +50,8 @@ static LONG one_tag(struct SocketBase *sb, struct TagItem *ti)
     case ACSBTC_ERRNOSTRPTR: if (set) return -1; GIVE(errno_string((LONG)*where));
     case ACSBTC_HERRNOSTRPTR: if (set) return -1; GIVE(herrno_string((LONG)*where));
     case ACSBTC_LOGSTAT: case ACSBTC_LOGTAGPTR: case ACSBTC_LOGFACILITY: case ACSBTC_LOGMASK:
-        if (set) return 0; GIVE(0);                  /* no syslog in version 1 */
+        if (set) return 0;                           /* no syslog in version 1 */
+        GIVE(0);
     case ACSBTC_FDCALLBACK: case ACSBTC_IOERRNOSTRPTR: case ACSBTC_S2ERRNOSTRPTR: case ACSBTC_S2WERRNOSTRPTR:
         return -1;
     }
