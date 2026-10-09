@@ -40,7 +40,9 @@ LONG bsd_WaitSelect(struct SocketBase *sb,LONG nfds,APTR rf,APTR wf,APTR ef,stru
  if(nfds<0)return fail(sb,AE_INVAL);
  if(nfds>FD_SETSIZE)nfds=FD_SETSIZE;
  for(fd=0;fd<nfds;fd++){ULONG ev=0;if(r&&FD_ISSET(fd,r))ev|=ACHS_POLLIN;if(w&&FD_ISSET(fd,w))ev|=ACHS_POLLOUT;if(e&&FD_ISSET(fd,e))ev|=ACHS_POLLPRI;if(!ev)continue;struct FD*f=fd_get(sb,fd);if(!f)return -1;map[n]=fd;want[n]=(UBYTE)ev;items[n*2]=f->handle;items[n*2+1]=ev;rev[n]=0;n++;}
- if(r)FD_ZERO(r);if(w)FD_ZERO(w);if(e)FD_ZERO(e);
+ if(r)FD_ZERO(r);
+ if(w)FD_ZERO(w);
+ if(e)FD_ZERO(e);
  rc=wait_items(sb,items,rev,n,tv,extra,&got);if(signals)*signals=got;if(rc<=0)return rc;
  for(fd=0;fd<n;fd++){int any=0;if(r&&(want[fd]&ACHS_POLLIN)&&(rev[fd]&(ACHS_POLLIN|ACHS_POLLHUP|ACHS_POLLERR))){FD_SET(map[fd],r);any=1;}if(w&&(want[fd]&ACHS_POLLOUT)&&(rev[fd]&(ACHS_POLLOUT|ACHS_POLLERR))){FD_SET(map[fd],w);any=1;}if(e&&(want[fd]&ACHS_POLLPRI)&&(rev[fd]&(ACHS_POLLPRI|ACHS_POLLERR))){FD_SET(map[fd],e);any=1;}if(any)ready++;}
  return ready;

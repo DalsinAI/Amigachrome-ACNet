@@ -20,6 +20,17 @@ static const char lib_name[] = ACNETWORK_LIBRARY_NAME;
 static const char lib_id[] = "opensocket.library 1.0 (4.10.2026) OpenSocket (AmigaChrome)\r\n";
 static const char lib_ver[] __attribute__((used)) = "$VER: opensocket.library 1.0 (4.10.2026) OpenSocket (AmigaChrome)";
 
+/* The RomTag near the start, its table defined at the end. A RomTag that
+ * ends exactly where the hunk ends is not found when the library is
+ * loaded, and GCC 16 put it last (9 Oct 2026). */
+struct lib_init_table { ULONG size; const APTR *vectors; APTR data; APTR init; };
+static const struct lib_init_table lib_inittable;
+const struct Resident lib_romtag = {
+    RTC_MATCHWORD, (struct Resident *)&lib_romtag, (APTR)(&lib_romtag + 1),
+    RTF_AUTOINIT, ACNETWORK_LIBRARY_VERSION, NT_LIBRARY, 0,
+    (char *)lib_name, (char *)lib_id, (APTR)&lib_inittable,
+};
+
 static inline LONG dev_call(struct Library *dev, struct ACNCall *call)
 {
     register LONG d0 __asm("d0");
@@ -200,12 +211,6 @@ static const APTR acnetwork_vectors[] = {
     (APTR)-1
 };
 
-static const struct { ULONG size; const APTR *vectors; APTR data; APTR init; } lib_inittable = {
+static const struct lib_init_table lib_inittable = {
     sizeof(struct ACNetworkBase), acnetwork_vectors, NULL, (APTR)lib_init,
-};
-
-const struct Resident lib_romtag = {
-    RTC_MATCHWORD, (struct Resident *)&lib_romtag, (APTR)(&lib_romtag + 1),
-    RTF_AUTOINIT, ACNETWORK_LIBRARY_VERSION, NT_LIBRARY, 0,
-    (char *)lib_name, (char *)lib_id, (APTR)&lib_inittable,
 };

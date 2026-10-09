@@ -205,7 +205,8 @@ static int parse_url(const char *text, struct url *u)
         if (!u->port) return 0;
     }
     if (*e != '/' && *e != '?' && *e) return 0;
-    snprintf(u->path, sizeof(u->path), "%s%s", *e == '/' ? "" : "/", e);
+    if (snprintf(u->path, sizeof(u->path), "%s%s", *e == '/' ? "" : "/", e) >= (int)sizeof(u->path))
+        return 0;                                   /* a path too long to send whole */
     if (strchr(u->path, '#')) *strchr(u->path, '#') = 0;
     return 1;
 }
@@ -216,13 +217,14 @@ static int follow(const struct url *u, const char *loc, struct url *next)
     char text[700];
     if (!strncasecmp(loc, "http://", 7) || !strncasecmp(loc, "https://", 8)) return parse_url(loc, next);
     *next = *u;
+    /* a path too long for next is refused, not cut: a cut one is another address */
     if (loc[0] == '/') {
-        snprintf(next->path, sizeof(next->path), "%s", loc);
+        if (snprintf(next->path, sizeof(next->path), "%s", loc) >= (int)sizeof(next->path)) return 0;
     } else {
         char *slash;
         snprintf(text, sizeof(text), "%s", u->path);
         if ((slash = strrchr(text, '/'))) slash[1] = 0;
-        snprintf(next->path, sizeof(next->path), "%s%s", text, loc);
+        if (snprintf(next->path, sizeof(next->path), "%s%s", text, loc) >= (int)sizeof(next->path)) return 0;
     }
     return 1;
 }
@@ -291,7 +293,7 @@ static int httpget_main(int argc, char **argv)
 {
     struct url u, next;
     const char *url = NULL, *to = NULL;
-    static char line[1024], request[1024], location[700];
+    static char line[1024], request[1024], location[sizeof line];   /* a whole Location: header */
     BOOL head_only = FALSE, chunked;
     int i, hops, status, rc = 10;
 

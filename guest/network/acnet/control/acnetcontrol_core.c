@@ -452,8 +452,8 @@ static void wifi_show(const struct ACWiFiNetwork *n, LONG count)
                 n[i].ssid, (unsigned)n[i].signal, (unsigned long)n[i].channel,
                 security_name(n[i].security), (n[i].flags & ACWIFI_FLAG_KNOWN) ? "known" : "");
         rows_add(&wifi_rows, line);
-        strncpy(wifi_row_ssid[wifi_rows.count - 1], n[i].ssid, 32);
-        wifi_row_ssid[wifi_rows.count - 1][32] = 0;
+        /* at most 32 bytes of the device's ssid[33], which needn't end in 0 */
+        snprintf(wifi_row_ssid[wifi_rows.count - 1], sizeof wifi_row_ssid[0], "%.32s", n[i].ssid);
     }
 }
 

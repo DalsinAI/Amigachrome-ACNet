@@ -35,7 +35,9 @@ int main(void)
     if(recv(as,(APTR)buf,4,0)!=4)return fail("recv");
     if(buf[0]!='p'||buf[1]!='i'||buf[2]!='n'||buf[3]!='g')return fail("payload");
     PutStr((STRPTR)"OpenSocket: TCP loopback ping OK\n");
-    if(as>=0)CloseSocket(as);if(cs>=0)CloseSocket(cs);if(ls>=0)CloseSocket(ls);
+    if(as>=0)CloseSocket(as);
+    if(cs>=0)CloseSocket(cs);
+    if(ls>=0)CloseSocket(ls);
     CloseLibrary(SocketBase);
     PutStr((STRPTR)"OpenSocket: PASS\n");
     return 0;
