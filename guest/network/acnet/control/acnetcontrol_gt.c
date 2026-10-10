@@ -226,7 +226,7 @@ static void group_natural(const ACNCGroup *g, int *w, int *h)
 
 static void measure_pages(void)
 {
-    int p, i;
+    int p;
     fh = font->tf_YSize;
     line_h = (mono && mono->tf_YSize > fh ? mono->tf_YSize : fh) + 2;
     btn_h = fh + 6;
