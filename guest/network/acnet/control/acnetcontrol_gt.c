@@ -37,7 +37,7 @@
 
 struct Library *GadToolsBase;
 
-#define VERSION_TEXT "OpenSocketControl 1.0 (4.10.2026)"
+#define VERSION_TEXT "OpenSocketControl 1.0.1 (10.10.2026)"
 static const char version[] __attribute__((used)) = "$VER: " VERSION_TEXT;
 
 enum { GID_PAGES = GID_FIRST_FREE, GID_STATUS, GID_COUNT };
@@ -66,6 +66,9 @@ static struct Menu *menu;
 static struct Gadget *glist;
 static struct TextFont *font;
 static struct TextAttr font_attr;
+static struct TextFont *mono;           /* a fixed-pitch font for the lists and their headings (1.0.1) */
+static struct TextAttr mono_attr;
+static struct RastPort measure_mono;
 static struct RastPort measure;
 static int page;
 static int fh, line_h, btn_h, mx_w, title_band;
@@ -87,6 +90,18 @@ static int text_w(const char *s)
     return TextLength(&measure, plain, n);
 }
 
+/* The lists' rows and headings are columns, so they are set in a fixed-pitch
+ * font: the screen's when it is one, else Topaz 8 (1.0.1). */
+static BOOL in_mono(const ACNCGroup *g)
+{
+    return g->list_id != 0;
+}
+
+static int line_w(const ACNCGroup *g, const char *s)
+{
+    return in_mono(g) ? TextLength(&measure_mono, (STRPTR)s, strlen(s)) : text_w(s);
+}
+
 static int button_w(const ACNCButton *b)
 {
     return text_w(b->label) + 2 * 8;
@@ -102,7 +117,7 @@ static int field_label_w(const ACNCGroup *g)
 
 static int list_h(const ACNCGroup *g)
 {
-    return g->list_rows * (fh + 1) + 4;
+    return g->list_rows * (mono->tf_YSize + 1) + 4;
 }
 
 static void group_natural(const ACNCGroup *g, int *w, int *h)
@@ -110,7 +125,7 @@ static void group_natural(const ACNCGroup *g, int *w, int *h)
     int i, gw = text_w(g->title) + 4 * PAD, gh = title_band + PAD, row = 0, cw = font->tf_XSize;
     /* widths below are the group's: its text plus INSET each side */
     for (i = 0; i < ACNC_MAX_LINES && g->line[i]; ++i) {
-        int tw = text_w(g->line[i]);
+        int tw = line_w(g, g->line[i]);
         if (tw > gw - 2 * INSET) gw = tw + 2 * INSET;
         gh += line_h;
     }
@@ -120,7 +135,7 @@ static void group_natural(const ACNCGroup *g, int *w, int *h)
         gh += PAD + btn_h;
     }
     if (g->list_id) {
-        int lw = g->list_chars * cw + 24;
+        int lw = g->list_chars * mono->tf_XSize + 24;
         if (lw > gw - 2 * INSET) gw = lw + 2 * INSET;
         gh += PAD + list_h(g);
     }
@@ -142,7 +157,7 @@ static void measure_pages(void)
 {
     int p, i;
     fh = font->tf_YSize;
-    line_h = fh + 2;
+    line_h = (mono && mono->tf_YSize > fh ? mono->tf_YSize : fh) + 2;
     btn_h = fh + 6;
     title_band = fh;
     mx_w = 0;
@@ -166,6 +181,15 @@ static void measure_pages(void)
 static BOOL choose_font(void)
 {
     int pass;
+    if (!mono) {
+        mono_attr = *scr->Font;
+        mono = OpenFont(&mono_attr);
+        if (mono && (mono->tf_Flags & FPF_PROPORTIONAL)) { CloseFont(mono); mono = NULL; }
+        if (!mono) { mono_attr = topaz8; mono = OpenFont(&mono_attr); }
+        if (!mono) return FALSE;
+        InitRastPort(&measure_mono);
+        SetFont(&measure_mono, mono);
+    }
     for (pass = 0; pass < 2; ++pass) {
         font_attr = pass ? topaz8 : *scr->Font;
         font = OpenFont(&font_attr);
@@ -278,8 +302,10 @@ static struct Gadget *make_gadgets(void)
             ng.ng_GadgetText = NULL;
             ng.ng_GadgetID = grp->list_id;
             ng.ng_Flags = 0;
+            ng.ng_TextAttr = &mono_attr;
             g = CreateGadget(LISTVIEW_KIND, g, &ng, GTLV_Labels, (ULONG)acnc_list(grp->list_id),
                              GTLV_ReadOnly, grp->list_id != GID_L_WIFI, TAG_DONE);
+            ng.ng_TextAttr = &font_attr;
             if (grp->list_id < GID_COUNT) gad[grp->list_id] = g;
             y += PAD + list_h(grp);
         }
@@ -328,13 +354,16 @@ static void say(struct RastPort *rp, int x, int y, const char *s, UWORD pen)
 }
 
 /* A line that may have grown since the window was measured: cut to fit. */
-static void say_in(struct RastPort *rp, int x, int y, int w, const char *s, UWORD pen)
+static void say_in(struct RastPort *rp, int x, int y, int w, const char *s, UWORD pen, struct TextFont *f)
 {
     struct TextExtent te;
-    ULONG n = TextFit(rp, (STRPTR)s, strlen(s), &te, NULL, 1, w, fh + 1);
+    ULONG n;
+    SetFont(rp, f);
+    n = TextFit(rp, (STRPTR)s, strlen(s), &te, NULL, 1, w, f->tf_YSize + 1);
     SetAPen(rp, pen);
-    Move(rp, x, y + font->tf_Baseline);
+    Move(rp, x, y + f->tf_Baseline);
     Text(rp, (STRPTR)s, n);
+    SetFont(rp, font);
 }
 
 /* What is not a gadget: the heading and the page's groups. */
@@ -366,7 +395,7 @@ static void draw_static(void)
         say(rp, ga[k].x + (ga[k].w - tw) / 2, ga[k].y, grp->title, text);
         for (i = 0; i < ACNC_MAX_LINES && grp->line[i]; ++i)
             say_in(rp, ga[k].x + INSET, ga[k].y + title_band + PAD + i * line_h, ga[k].w - 2 * INSET,
-                   grp->line[i], text);
+                   grp->line[i], text, in_mono(grp) ? mono : font);
     }
     if (dri) FreeScreenDrawInfo(scr, dri);
 }
@@ -391,7 +420,7 @@ static void live_update(void)
             int y = ga[k].y + title_band + PAD + i * line_h;
             SetAPen(rp, back);
             RectFill(rp, ga[k].x + INSET, y, ga[k].x + ga[k].w - INSET - 1, y + line_h - 1);
-            say_in(rp, ga[k].x + INSET, y, ga[k].w - 2 * INSET, grp->line[i], text);
+            say_in(rp, ga[k].x + INSET, y, ga[k].w - 2 * INSET, grp->line[i], text, in_mono(grp) ? mono : font);
         }
         if (grp->list_id && grp->list_id < GID_COUNT && gad[grp->list_id]) {
             GT_SetGadgetAttrs(gad[grp->list_id], win, NULL, GTLV_Labels, ~0UL, TAG_DONE);
@@ -458,6 +487,7 @@ static void hide_window(void)
     if (menu) { FreeMenus(menu); menu = NULL; }
     if (vi) { FreeVisualInfo(vi); vi = NULL; }
     if (font) { CloseFont(font); font = NULL; }
+    if (mono) { CloseFont(mono); mono = NULL; }
     if (scr) { UnlockPubScreen(NULL, scr); scr = NULL; }
 }
 
